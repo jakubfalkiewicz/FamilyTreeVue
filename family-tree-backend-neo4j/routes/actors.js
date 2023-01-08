@@ -4,30 +4,53 @@ const driver = require("../config/neo4jDriver");
 
 router.get("/", async (req, res) => {
   const session = driver.session();
-  const wynik = await session.run("MATCH (a:Actor) RETURN a LIMIT 25");
-  // return res.send(wynik.records.map((el) => el._fields[0].properties));
-  return res.send(wynik);
+  const actors = await session.run(
+    "MATCH (a:Actor) RETURN { id: toString(ID(a)), firstName: a.firstName , lastName: a.lastName, gender: a.gender , birthDate: a.birthDate, treeId: a.treeId } as Actor"
+  );
+  const actorsList = actors.records
+    .map((record) => record._fields[0])
+    .reduce((prev, curr) => {
+      if (prev.map((el) => el.id).includes(curr.id)) {
+        return [...prev];
+      } else {
+        return [...prev, curr];
+      }
+    }, []);
+  const relations = await session.run(
+    "MATCH (a:Actor)-[r]-() RETURN { id: toString(ID(r)), type: type(r), from: toString(ID(startNode(r))), to: toString(ID(endNode(r))) } as Relation"
+  );
+  const relationsList = relations.records
+    .map((record) => record._fields[0])
+    .reduce((prev, curr) => {
+      if (prev.map((el) => el.id).includes(curr.id)) {
+        return [...prev];
+      } else {
+        return [...prev, curr];
+      }
+    }, []);
+  return res.send({ nodes: actorsList, edges: relationsList });
 });
 
 router.get("/:id", async (req, res) => {
   const session = driver.session();
   const actorId = req.params.id;
   const wynik = await session.run(
-    `MATCH (a)-[r]-(b) WHERE ID(a) = ${actorId} RETURN a,r `
+    `MATCH (a) WHERE ID(a) = ${actorId} RETURN { id: toString(ID(a)), firstName: a.firstName , lastName: a.lastName,  birthDate: a.birthDate, treeId: a.treeId } as Actor `
   );
-  return res.send(wynik);
+  return res.send(wynik.records[0]._fields[0]);
 });
 
 router.post("/", async (req, res) => {
   const session = driver.session();
   const firstName = req.body.firstName;
   const lastName = req.body.lastName;
+  const gender = req.body.gender;
   const birthDate = req.body.birthDate;
   const treeId = req.body.treeId;
   if (firstName && lastName && birthDate) {
     await session
       .run(
-        `CREATE (a:Actor {firstName : \'${firstName}\', lastName : \'${lastName}\', birthDate : \'${birthDate}\', treeId : \'${treeId}\'}) RETURN a.firstName`
+        `CREATE (a:Actor {firstName : \'${firstName}\', lastName : \'${lastName}\', gender : \'${gender}\', birthDate : \'${birthDate}\', treeId : \'${treeId}\'}) RETURN a.firstName`
       )
       .subscribe({
         onNext: (record) => {
@@ -40,6 +63,8 @@ router.post("/", async (req, res) => {
             firstName: firstName,
             lastName: lastName,
             birthDate: birthDate,
+            gender: gender,
+            treeId: treeId,
           });
         },
         onError: (error) => {
@@ -109,10 +134,10 @@ router.post("/addFather/:id", async (req, res) => {
 
 router.post("/addMother/:id", async (req, res) => {
   const session = driver.session();
-  const parentId = req.body.id;
+  const parentId = req.body.parentId;
   const childId = req.params.id;
   const wynik = await session.run(
-    `MATCH (a:Actor), (b:Actor) WHERE ID(a) = ${parentId} AND ID(b) = ${childId} MERGE (a)-[r:IS_MOTHER]->(b) RETURN r`
+    `MATCH (a:Actor), (b:Actor) WHERE ID(a) = ${parentId} AND ID(b) = ${childId} MERGE (a)-[r:IS_MOTHER {treeId: a.treeId}]->(b) RETURN r`
   );
   return res.send(wynik);
 });
