@@ -18,6 +18,11 @@ const routes = [
     name: "users",
     component: () => import("@/views/UserView.vue"),
   },
+  {
+    path: "/tree",
+    name: "tree",
+    component: () => import("@/views/FamilyTree.vue"),
+  },
 ];
 
 const router = createRouter({

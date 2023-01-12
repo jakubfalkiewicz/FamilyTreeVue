@@ -5,7 +5,7 @@ const driver = require("../config/neo4jDriver");
 router.get("/", async (req, res) => {
   const session = driver.session();
   const actors = await session.run(
-    "MATCH (a:Actor) RETURN { id: toString(ID(a)), firstName: a.firstName , lastName: a.lastName, gender: a.gender , birthDate: a.birthDate, treeId: a.treeId } as Actor"
+    "MATCH (a:Actor) RETURN { id: toString(ID(a)), firstName: a.firstName , lastName: a.lastName, gender: a.gender, generation: a.generation , birthDate: a.birthDate, treeId: a.treeId } as Actor"
   );
   const actorsList = actors.records
     .map((record) => record._fields[0])
@@ -15,7 +15,10 @@ router.get("/", async (req, res) => {
       } else {
         return [...prev, curr];
       }
-    }, []);
+    }, [])
+    .sort(function (a, b) {
+      return b.generation - a.generation;
+    });
   const relations = await session.run(
     "MATCH (a:Actor)-[r]-() RETURN { id: toString(ID(r)), type: type(r), from: toString(ID(startNode(r))), to: toString(ID(endNode(r))) } as Relation"
   );
@@ -35,7 +38,7 @@ router.get("/:id", async (req, res) => {
   const session = driver.session();
   const actorId = req.params.id;
   const wynik = await session.run(
-    `MATCH (a) WHERE ID(a) = ${actorId} RETURN { id: toString(ID(a)), firstName: a.firstName , lastName: a.lastName,  birthDate: a.birthDate, treeId: a.treeId } as Actor `
+    `MATCH (a) WHERE ID(a) = ${actorId} RETURN { id: toString(ID(a)), firstName: a.firstName , lastName: a.lastName,  birthDate: a.birthDate, gender: a.gender,  generation: a.generation, treeId: a.treeId } as Actor `
   );
   return res.send(wynik.records[0]._fields[0]);
 });
@@ -45,12 +48,13 @@ router.post("/", async (req, res) => {
   const firstName = req.body.firstName;
   const lastName = req.body.lastName;
   const gender = req.body.gender;
+  const generation = req.body.generation;
   const birthDate = req.body.birthDate;
   const treeId = req.body.treeId;
   if (firstName && lastName && birthDate) {
     await session
       .run(
-        `CREATE (a:Actor {firstName : \'${firstName}\', lastName : \'${lastName}\', gender : \'${gender}\', birthDate : \'${birthDate}\', treeId : \'${treeId}\'}) RETURN a.firstName`
+        `CREATE (a:Actor {firstName : \'${firstName}\', lastName : \'${lastName}\', gender : \'${gender}\', birthDate : \'${birthDate}\', generation : \'${generation}\', treeId : \'${treeId}\'}) RETURN a.firstName`
       )
       .subscribe({
         onNext: (record) => {
@@ -85,19 +89,19 @@ router.put("/:id", async (req, res) => {
   const firstName = req.body.firstName;
   const lastName = req.body.lastName;
   const birthDate = req.body.birthDate;
+  const generation = req.body.generation;
+  const gender = req.body.gender;
   const actorId = req.params.id;
 
   await session
     .run(
-      `MATCH (a) WHERE ID(a) = ${actorId} SET a.firstName = \'${firstName}\', a.lastName = \'${lastName}\', a.birthDate = \'${birthDate}\' RETURN a`
+      `MATCH (a) WHERE ID(a) = ${actorId} SET a.firstName = \'${firstName}\', a.lastName = \'${lastName}\', a.birthDate = \'${birthDate}\', a.generation = \'${generation}\', a.gender = \'${gender}\' RETURN a`
     )
     .subscribe({
       onCompleted: () => {
         session.close();
         return res.send({
-          firstName: firstName,
-          lastName: lastName,
-          birthDate: birthDate,
+          ...req.body,
         });
       },
       onError: (error) => {
@@ -138,6 +142,16 @@ router.post("/addMother/:id", async (req, res) => {
   const childId = req.params.id;
   const wynik = await session.run(
     `MATCH (a:Actor), (b:Actor) WHERE ID(a) = ${parentId} AND ID(b) = ${childId} MERGE (a)-[r:IS_MOTHER {treeId: a.treeId}]->(b) RETURN r`
+  );
+  return res.send(wynik);
+});
+
+router.post("/addPartner/:id", async (req, res) => {
+  const session = driver.session();
+  const partnerId = req.body.partnerId;
+  const partner2Id = req.params.id;
+  const wynik = await session.run(
+    `MATCH (a:Actor), (b:Actor) WHERE ID(a) = ${partnerId} AND ID(b) = ${partner2Id} MERGE (a)-[r:PARTNER]-(b) RETURN r`
   );
   return res.send(wynik);
 });

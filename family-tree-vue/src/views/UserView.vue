@@ -46,12 +46,23 @@
         <div>{{ node.lastName }}</div>
       </div> -->
     </div>
+    <div id="tree" ref="tree"></div>
     <v-network-graph
-      v-if="treeNodes && treeEdges"
+      v-if="treeNodes && treeEdges && layout"
       :nodes="treeNodes"
       :edges="treeEdges"
       :configs="configs"
-    />
+      :layouts="layout"
+    >
+      <template #edge-label="{ edge, ...slotProps }">
+        <v-edge-label
+          :text="edge.label"
+          align="center"
+          vertical-align="above"
+          v-bind="slotProps"
+        />
+      </template>
+    </v-network-graph>
     <!-- <v-network-graph
       :nodes="data.nodes"
       :edges="data.edges"
@@ -66,19 +77,37 @@ import { useRoute } from "vue-router";
 import { ref, watchEffect, onMounted } from "vue";
 import { userStore } from "../store";
 import * as vNG from "v-network-graph";
-import data from "./data";
 
 const configs = vNG.defineConfigs({
-  // view: {
-  //   layoutHandler: new vNG.GridLayout({ grid: 15 }),
-  // },
-  node: {
+  edge: {
+    normal: {
+      color: "#00000096",
+      width: 3,
+    },
+    margin: 4,
+    marker: {
+      target: {
+        type: (edge) => (edge.type == "PARTNER" ? "none" : "arrow"),
+        width: 4,
+        height: 4,
+      },
+    },
     label: {
       visible: true,
-      fontFamily: undefined,
+      color: "#fff",
+    },
+  },
+  node: {
+    normal: {
+      type: "circle",
+      color: (node) => node.color,
+    },
+    label: {
+      visible: true,
+      fontFamily: "sans-serif",
       fontSize: 11,
       lineHeight: 1.1,
-      color: "#ffffff",
+      color: "#fff",
       margin: 4,
       direction: "south",
       text: "name",
@@ -93,6 +122,7 @@ const edit = ref(false);
 const canEdit = ref(false);
 const treeNodes = ref(null);
 const treeEdges = ref(null);
+const layout = ref(null);
 
 onMounted(() => {
   store.getUsers().then((data) => {
@@ -100,21 +130,88 @@ onMounted(() => {
     user.value = data.filter((user) => user._id === route.params.id)[0];
   });
   store.getTrees().then((data) => {
-    console.log(data);
     store.setTrees(data);
     treeNodes.value = data.nodes
       .filter((node) => node.treeId === route.params.id)
-      .map((el) => ({ ...el, name: `${el.firstName} \n${el.lastName}` }));
+      .map((el) => ({
+        ...el,
+        name: `${el.firstName} \n${el.lastName}`,
+        color: el.gender === "male" ? "lightskyblue" : "hotpink",
+      }));
+    const findNode = (id) => {
+      return data.nodes.map((el) => el.id).indexOf(id);
+    };
+    findNode("3");
     treeEdges.value = data.edges.map((el) => ({
       ...el,
-      source: el.from,
-      target: el.to,
+      source: findNode(el.from),
+      target: findNode(el.to),
+      label: el.type,
     }));
+    const nodes = data.nodes.filter((node) => node.treeId === route.params.id);
+    const hasParent = (node) => {
+      const dane = data.edges.filter(
+        (edge) =>
+          node.id == edge.to && edge.type == ("IS_FATHER" || "IS_MOTHER")
+      );
+      return dane.length > 0 ? dane[0].from : false;
+    };
+    const hasPartner = (node) => {
+      const dane = data.edges.filter(
+        (edge) => node.id === (edge.to || edge.from) && edge.type === "PARTNER"
+      );
+      if (dane.length > 0) {
+        return node.id === edge.to ? edge.from : edge.to;
+      }
+    };
+    const setPosition = () => {
+      let positions = nodes.reduce((prev, curr, index) => {
+        if (hasParent(curr)) {
+          return [
+            ...prev,
+            {
+              id: curr.id,
+              gen: curr.generation,
+              x: prev[index - 1].x - 100,
+              y: curr.generation * -150,
+            },
+          ];
+        } else {
+          return [
+            ...prev,
+            {
+              id: curr.id,
+              gen: curr.generation,
+              x: 0,
+              y: curr.generation * -150,
+            },
+          ];
+        }
+      }, []);
+      layout.value = {
+        nodes: {
+          ...positions,
+        },
+      };
+      // console.log(data.edges);
+      // console.log(data.edges.reverse());
+      // console.log(positions);
+    };
+    setPosition();
+    // layout.value = {
+    //   nodes: {
+    //     ...data.nodes
+    //       .filter((node) => node.treeId === route.params.id)
+    //       .map((el) => ({
+    //         x: -el.generation * 50 + Math.floor(Math.random() * 5) * 150,
+    //         y: -el.generation * 150,
+    //       })),
+    //   },
+    // };
   });
 });
 
 watchEffect(() => {
-  console.log(user.value);
   if (user.value !== null) {
     canEdit.value =
       store.loggedUser !== null
