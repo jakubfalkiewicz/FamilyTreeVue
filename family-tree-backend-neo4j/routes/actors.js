@@ -54,27 +54,40 @@ router.post("/", async (req, res) => {
   if (firstName && lastName && birthDate) {
     await session
       .run(
-        `CREATE (a:Actor {firstName : \'${firstName}\', lastName : \'${lastName}\', gender : \'${gender}\', birthDate : \'${birthDate}\', generation : \'${generation}\', treeId : \'${treeId}\'}) RETURN a.firstName`
+        `CREATE (a:Actor {firstName : \'${firstName}\', lastName : \'${lastName}\', gender : \'${gender}\', birthDate : \'${birthDate}\', generation : \'${generation}\', treeId : \'${treeId}\'}) RETURN ID(a)`
       )
-      .subscribe({
-        onNext: (record) => {
-          console.log("onNext:");
-          console.log(record.get("a.firstName"));
-        },
-        onCompleted: () => {
-          session.close();
-          return res.send({
-            firstName: firstName,
-            lastName: lastName,
-            birthDate: birthDate,
-            gender: gender,
-            treeId: treeId,
-          });
-        },
-        onError: (error) => {
-          console.log(error);
-        },
+      .then((response) => {
+        return res.send({
+          firstName: firstName,
+          lastName: lastName,
+          birthDate: birthDate,
+          generation: generation,
+          gender: gender,
+          treeId: treeId,
+          id: response.records[0]._fields[0].low,
+        });
       });
+    //   onNext: (record) => {
+    //     console.log("onNext:");
+    //     console.log(JSON.parse(record.get("ID(a)")));
+    //     let id = JSON.parse(record.get("ID(a)"));
+    //   },
+    //   onCompleted: (data) => {
+    //     console.log(id);
+    //     session.close();
+    //     return res.send({
+    //       firstName: firstName,
+    //       lastName: lastName,
+    //       birthDate: birthDate,
+    //       generation: generation,
+    //       gender: gender,
+    //       treeId: treeId,
+    //     });
+    //   },
+    //   onError: (error) => {
+    //     console.log(error);
+    //   },
+    // });
   } else {
     return res.send(
       `Empty fields: ${!firstName ? "firstName" : ""}${

@@ -52,7 +52,25 @@
       >
         Add Related
       </button>
-      <button v-if="addNode" class="manage-button">Parent</button>
+      <button
+        v-if="addNode"
+        class="manage-button"
+        @click="
+          {
+            nodeToAdd.type = 'parent';
+            addNode = !addNode;
+          }
+        "
+      >
+        Parent
+      </button>
+      <input
+        v-if="editNode && !addNode && nodeToAdd.type != null"
+        placeholder="First Name"
+        class="input"
+        :value="nodeToAdd.firstName"
+        @change="(e) => (nodeToAdd.firstName = e.target.value)"
+      />
       <button
         v-if="!editNode"
         @click="editNode = !editNode"
@@ -60,13 +78,42 @@
       >
         Edit Person
       </button>
-      <button v-if="addNode" class="manage-button">Child</button>
+      <button
+        v-if="addNode"
+        class="manage-button"
+        @click="
+          {
+            nodeToAdd.type = 'child';
+            addNode = !addNode;
+          }
+        "
+      >
+        Child
+      </button>
+      <input
+        v-if="editNode && !addNode && nodeToAdd.type != null"
+        placeholder="Last Name"
+        class="input"
+        :value="nodeToAdd.lastName"
+        @change="(e) => (nodeToAdd.lastName = e.target.value)"
+      />
+      <select
+        v-if="editNode && !addNode && nodeToAdd.type != null"
+        name="gender"
+        id="gender"
+        class="input"
+        @change="(e) => (nodeToAdd.gender = e.target.value)"
+      >
+        <option disabled selected value>----- select gender -----</option>
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+      </select>
       <button v-if="!editNode" class="manage-button">Remove Person</button>
-      <button v-if="addNode" class="manage-button">Partner</button>
+      <!-- <button v-if="addNode" class="manage-button">Partner</button> -->
       <input
         type="text"
         class="input"
-        v-if="editNode && !addNode"
+        v-if="editNode && !addNode && nodeToAdd.type == null"
         :value="selectedNode.firstName"
         placeholder="First name"
         @change="(e) => (selectedNode.firstName = e.target.value)"
@@ -74,7 +121,7 @@
       <input
         type="text"
         class="input"
-        v-if="editNode && !addNode"
+        v-if="editNode && !addNode && nodeToAdd.type == null"
         :value="selectedNode.lastName"
         placeholder="Last name"
         @change="(e) => (selectedNode.lastName = e.target.value)"
@@ -117,6 +164,9 @@ import * as vNG from "v-network-graph";
 import axios from "axios";
 
 const configs = vNG.defineConfigs({
+  view: {
+    // scalingObjects: true,
+  },
   edge: {
     normal: {
       color: "#00000096",
@@ -167,6 +217,12 @@ const manageNode = ref("none");
 const selectedNode = ref(null);
 const editNode = ref(false);
 const addNode = ref(false);
+const nodeToAdd = ref({
+  type: null,
+  firstName: null,
+  lastName: null,
+  gender: null,
+});
 
 function handleEdit() {
   if (edit.value == true) {
@@ -188,27 +244,70 @@ function handleCancelEdit() {
 }
 
 function hideManageNode() {
+  if (nodeToAdd.value.type != null) nodeToAdd.value.type = null;
+  if (editNode.value == true) editNode.value = !editNode.value;
+  if (addNode.value == true) addNode.value = !addNode.value;
   manageNode.value = "none";
 }
 
-function handleEditNode() {
+async function handleEditNode() {
+  if (nodeToAdd.value.type != null) {
+    await axios
+      .post(`http://localhost:5000/actors/`, {
+        ...nodeToAdd.value,
+        generation:
+          nodeToAdd.value.type == "child"
+            ? parseInt(selectedNode.value.generation) - 1
+            : parseInt(selectedNode.value.generation) + 1,
+        treeId: user.value._id,
+        birthDate: "Unknown",
+      })
+      .then((res) => {
+        console.log(selectedNode.value.gender);
+        if (nodeToAdd.value.type == "child") {
+          axios
+            .post(
+              selectedNode.value.gender == "male"
+                ? `http://localhost:5000/actors/addFather/${res.data.id}`
+                : `http://localhost:5000/actors/addMother/${res.data.id}`,
+              { parentId: selectedNode.value.id }
+            )
+            .then(() => formGraph());
+        } else {
+          axios
+            .post(
+              res.data.gender == "male"
+                ? `http://localhost:5000/actors/addFather/${selectedNode.value.id}`
+                : `http://localhost:5000/actors/addMother/${selectedNode.value.id}`,
+              { parentId: res.data.id }
+            )
+            .then(() => formGraph());
+        }
+      });
+  } else {
+    axios
+      .put(
+        `http://localhost:5000/actors/${selectedNode.value.id}`,
+        selectedNode.value
+      )
+      .then(() => formGraph());
+  }
   editNode.value = !editNode.value;
-  axios
-    .put(
-      `http://localhost:5000/actors/${selectedNode.value.id}`,
-      selectedNode.value
-    )
-    .then(() => formGraph());
 }
 
 function handleCancelEditNode() {
+  console.log(nodeToAdd.value);
   formGraph();
   editNode.value = !editNode.value;
-  addNode.value = !addNode.value;
+  if (addNode.value == true) addNode.value = !addNode.value;
+  nodeToAdd.value.type = null;
+  nodeToAdd.value.firstName = null;
+  nodeToAdd.value.lastName = null;
 }
 
 function customEventHandler(nodeId, event) {
   selectedNode.value = treeNodes.value[nodeId];
+  console.log(selectedNode.value);
   const eventInfo = {
     idIndex: parseInt(nodeId),
     type: event.type,
@@ -221,9 +320,7 @@ function customEventHandler(nodeId, event) {
     manageNode.value = "none"
       ? (manageNode.value = "flex")
       : (manageNode.value = "none");
-    console.log(manageNode.value);
   }
-  console.log(treeNodes.value[nodeId]);
 }
 
 function formGraph() {
@@ -239,18 +336,21 @@ function formGraph() {
     const findNode = (id) => {
       return data.nodes.map((el) => el.id).indexOf(id);
     };
-    treeEdges.value = data.edges.map((el) => ({
-      ...el,
-      source: findNode(el.from),
-      target: findNode(el.to),
-      label: el.type,
-    }));
+    treeEdges.value = data.edges
+      .filter((edge) => edge.type !== "PARTNER")
+      .map((el) => ({
+        ...el,
+        source: findNode(el.from),
+        target: findNode(el.to),
+        label: el.type.substring(3),
+      }));
     const nodes = data.nodes.filter((node) => node.treeId === route.params.id);
     const hasParent = (node) => {
       // console.log("NODEID: " + findNode(node.id));
       const dane = data.edges.filter(
         (edge) =>
-          node.id == edge.to && edge.type == ("IS_FATHER" || "IS_MOTHER")
+          node.id == edge.to &&
+          (edge.type == "IS_FATHER" || edge.type == "IS_MOTHER")
       );
       return dane.length > 0 ? dane[0].from : false;
     };
@@ -262,18 +362,22 @@ function formGraph() {
         return node.id === edge.to ? edge.from : edge.to;
       }
     }
+    function lastOfGen(list, gen) {
+      const result = list
+        .filter((el) => el.gen == gen)
+        .sort((a, b) => (a.x > b.x ? -1 : 1));
+      console.log(result);
+      return result.length > 0 ? result[0].x + 100 : 0;
+    }
     function setPosition() {
-      let positions = nodes.reduce((prev, curr, index) => {
-        // console.log(prev.length > 0 ? prev[index - 1].x : "");
+      let positions = treeNodes.value.reduce((prev, curr, index) => {
         if (hasParent(curr)) {
-          // console.log("CURR ID: " + curr.id);
-          // console.log("PARENT ID: " + hasParent(curr));
           return [
             ...prev,
             {
               id: curr.id,
               gen: curr.generation,
-              x: prev[index - 1].x - 100,
+              x: lastOfGen(prev, curr.generation),
               y: curr.generation * -150,
             },
           ];
@@ -283,7 +387,7 @@ function formGraph() {
             {
               id: curr.id,
               gen: curr.generation,
-              x: 100 * prev.length,
+              x: lastOfGen(prev, curr.generation),
               y: curr.generation * -150,
             },
           ];
