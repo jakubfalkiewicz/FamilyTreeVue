@@ -63,7 +63,11 @@ export default {
       const url = `http://127.0.0.1:5173/`;
       if (await this.validateForm()) {
         if (call.target.action == `${url}register`) {
-          store.registerUser(this.values);
+          store.registerUser(this.values).then((res) => {
+            res == "Success"
+              ? this.$router.push("../")
+              : alert("Something went wrong...");
+          });
         }
         if (call.target.action == `${url}login`) {
           store.loginUser(this.values).then((res) => {

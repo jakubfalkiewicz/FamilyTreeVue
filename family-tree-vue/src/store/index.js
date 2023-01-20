@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import axios from "axios";
 
 const dbUrl = `http://localhost:4000/api`;
+const treeUrl = `http://localhost:5000`;
 
 export const userStore = defineStore("main", {
   state: () => ({
@@ -54,11 +55,27 @@ export const userStore = defineStore("main", {
       }
     },
     async registerUser(user) {
-      this.isUnique(user) &&
-        (await axios.post(`${dbUrl}/users/register`, user).then((res) => {
-          this.$router.push("Home");
-          this.loggedUser = res.data;
-        }));
+      if (this.isUnique(user)) {
+        const response = await axios
+          .post(`${dbUrl}/users/register`, user)
+          .then(async (res) => {
+            console.log(res.data);
+            this.loggedUser = res.data;
+            return await axios
+              .post(`${treeUrl}/actors`, {
+                firstName: user.firstName,
+                lastName: user.lastName,
+                gender: user.gender,
+                generation: 1,
+                birthDate: user.birthDate,
+                treeId: res.data._id,
+              })
+              .then(() => {
+                return "Success";
+              });
+          });
+        return response;
+      }
     },
     async loginUser(user) {
       const response = await axios

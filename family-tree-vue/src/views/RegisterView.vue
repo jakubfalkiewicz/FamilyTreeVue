@@ -26,6 +26,64 @@
     <p>
       <span v-if="errors?.email" class="errors"> {{ errors?.email }} </span>
     </p>
+
+    <label for="firstName">First name:</label>
+    <br />
+    <input
+      type="text"
+      id="firstName"
+      name="firstName"
+      v-model="values.firstName"
+    />
+    <p>
+      <span v-if="errors?.firstName" class="errors">
+        {{ errors?.firstName }}
+      </span>
+    </p>
+
+    <label for="lastName">Last name:</label>
+    <br />
+    <input
+      type="text"
+      id="lastName"
+      name="lastName"
+      v-model="values.lastName"
+    />
+    <p>
+      <span v-if="errors?.lastName" class="errors">
+        {{ errors?.lastName }}
+      </span>
+    </p>
+
+    <label for="birthDate">Birth date:</label>
+    <br />
+    <input
+      type="date"
+      id="birthDate"
+      name="birthDate"
+      min="1800-01-01"
+      max="2023-12-31"
+      v-model="values.birthDate"
+    />
+    <p>
+      <span v-if="errors?.birthDate" class="errors">
+        {{ errors?.birthDate }}
+      </span>
+    </p>
+
+    <label for="gender">Gender:</label>
+    <br />
+    <select id="gender" name="gender" v-model="values.gender">
+      <option disabled selected value>----- select gender -----</option>
+      <option value="male">Male</option>
+      <option value="female">Female</option>
+    </select>
+    <p>
+      <span v-if="errors?.birthDate" class="errors">
+        {{ errors?.birthDate }}
+      </span>
+    </p>
+
     <label for="password">Password:</label>
     <br />
     <input
@@ -68,6 +126,7 @@ onMounted(() => {
     store.setStore(data);
   });
 });
+
 export default {
   name: "RegisterView",
   components: {
@@ -78,6 +137,10 @@ export default {
       schema: yup.object().shape({
         username: yup.string().required().min(3).max(25),
         email: yup.string().email().required(),
+        firstName: yup.string().required().min(3).max(25),
+        lastName: yup.string().required().min(3).max(25),
+        birthDate: yup.date().required(),
+        gender: yup.string().oneOf(["female", "male"]).required(),
         password: yup
           .string()
           .required("Please enter a password")
@@ -102,8 +165,12 @@ export default {
       values: {
         username: "",
         email: "",
+        firstName: "",
+        lastName: "",
+        birthDate: "",
         password: "",
         confirm_password: "",
+        gender: "",
       },
     };
   },

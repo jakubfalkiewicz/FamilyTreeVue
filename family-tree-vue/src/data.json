@@ -1,0 +1,184 @@
+{
+  "users": [
+    {
+      "_id": "63b6c37f5f550cf68b61cb4a",
+      "username": "olakotaa",
+      "password": "$2a$10$f9wIxbNn.GvE7lZRNoPG0.Ht7YRaiiVJ365lnBZU8mNvYR4iu.sRm",
+      "email": "olakotaa@example.com",
+      "admin": false,
+      "registrationDate": "2023-01-05T12:33:03.153Z",
+      "__v": 0
+    },
+    {
+      "_id": "63b71b7cd88ed18ce89d93f8",
+      "username": "olakot",
+      "password": "$2a$10$JWQXdHR4747hPvZJizFlcOudkPS6Nyn0aCggQxkduPHaqzQ6N9Ig2",
+      "email": "sqrwol13@gmail.com",
+      "admin": false,
+      "registrationDate": "2023-01-05T18:48:28.944Z",
+      "__v": 0
+    }
+  ],
+  "trees": {
+    "nodes": [
+      {
+        "generation": "3",
+        "treeId": "63b6c37f5f550cf68b61cb4a",
+        "lastName": "Jeziorski",
+        "firstName": "Jerzy",
+        "gender": "male",
+        "id": "4",
+        "birthDate": "22-12-1950"
+      },
+      {
+        "generation": "3",
+        "treeId": "63b6c37f5f550cf68b61cb4a",
+        "lastName": "Kowalska",
+        "firstName": "Renata",
+        "gender": "female",
+        "id": "5",
+        "birthDate": "21-11-1947"
+      },
+      {
+        "generation": "3",
+        "treeId": "63b6c37f5f550cf68b61cb4a",
+        "lastName": "Jeziorska",
+        "firstName": "Barbara",
+        "gender": "female",
+        "id": "7",
+        "birthDate": "Unknown"
+      },
+      {
+        "generation": "2",
+        "treeId": "63b6c37f5f550cf68b61cb4a",
+        "lastName": "Kowalska",
+        "firstName": "Grazyna",
+        "gender": "female",
+        "id": "1",
+        "birthDate": "15-01-1975"
+      },
+      {
+        "generation": "2",
+        "treeId": "63b6c37f5f550cf68b61cb4a",
+        "lastName": "Kowalski",
+        "firstName": "Jacek",
+        "gender": "male",
+        "id": "2",
+        "birthDate": "02-02-1974"
+      },
+      {
+        "generation": "2",
+        "treeId": "63b6c37f5f550cf68b61cb4a",
+        "lastName": "Badziąg",
+        "firstName": "Elżbieta",
+        "gender": "female",
+        "id": "8",
+        "birthDate": "Unknown"
+      },
+      {
+        "generation": "2",
+        "treeId": "63b6c37f5f550cf68b61cb4a",
+        "lastName": "Badziąg",
+        "firstName": "Grzegorz",
+        "gender": "male",
+        "id": "9",
+        "birthDate": "Unknown"
+      },
+      {
+        "generation": "1",
+        "treeId": "63b6c37f5f550cf68b61cb4a",
+        "lastName": "Kowalski",
+        "firstName": "Jan",
+        "gender": "male",
+        "id": "0",
+        "birthDate": "11-10-2001"
+      },
+      {
+        "generation": "1",
+        "treeId": "63b6c37f5f550cf68b61cb4a",
+        "lastName": "Kowalska",
+        "firstName": "Anna",
+        "gender": "female",
+        "id": "3",
+        "birthDate": "15-03-2005"
+      },
+      {
+        "generation": "1",
+        "treeId": "63b6c37f5f550cf68b61cb4a",
+        "lastName": "Badziąg",
+        "firstName": "Julia",
+        "gender": "female",
+        "id": "6",
+        "birthDate": "Unknown"
+      }
+    ],
+    "edges": [
+      {
+        "from": "2",
+        "id": "3",
+        "to": "0",
+        "type": "IS_FATHER"
+      },
+      {
+        "from": "1",
+        "id": "0",
+        "to": "0",
+        "type": "IS_MOTHER"
+      },
+      {
+        "from": "7",
+        "id": "9",
+        "to": "1",
+        "type": "IS_MOTHER"
+      },
+      {
+        "from": "2",
+        "id": "5",
+        "to": "1",
+        "type": "PARTNER"
+      },
+      {
+        "from": "4",
+        "id": "4",
+        "to": "1",
+        "type": "IS_FATHER"
+      },
+      {
+        "from": "1",
+        "id": "1",
+        "to": "3",
+        "type": "IS_MOTHER"
+      },
+      {
+        "from": "5",
+        "id": "6",
+        "to": "2",
+        "type": "IS_MOTHER"
+      },
+      {
+        "from": "2",
+        "id": "2",
+        "to": "3",
+        "type": "IS_FATHER"
+      },
+      {
+        "from": "4",
+        "id": "7",
+        "to": "8",
+        "type": "IS_FATHER"
+      },
+      {
+        "from": "9",
+        "id": "10",
+        "to": "6",
+        "type": "IS_FATHER"
+      },
+      {
+        "from": "8",
+        "id": "8",
+        "to": "6",
+        "type": "IS_MOTHER"
+      }
+    ]
+  }
+}

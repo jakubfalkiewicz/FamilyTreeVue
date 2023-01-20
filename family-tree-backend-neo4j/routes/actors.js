@@ -123,6 +123,25 @@ router.put("/:id", async (req, res) => {
     });
 });
 
+router.delete("/delRel", async (req, res) => {
+  const session = driver.session();
+  const childId = req.body.childId;
+  const parentId = req.body.parentId;
+  await session
+    .run(
+      `MATCH (a:Actor)-[r]->(b:Actor) WHERE ID(a)=${parentId} AND ID(b)=${childId} delete r`
+    )
+    .subscribe({
+      onCompleted: () => {
+        session.close();
+        return res.send("usunieto aktora");
+      },
+      onError: (error) => {
+        console.log(error);
+      },
+    });
+});
+
 router.delete("/:id", async (req, res) => {
   const session = driver.session();
   const actorId = req.params.id;
@@ -144,7 +163,7 @@ router.post("/addFather/:id", async (req, res) => {
   const parentId = req.body.parentId;
   const childId = req.params.id;
   const wynik = await session.run(
-    `MATCH (a:Actor), (b:Actor) WHERE ID(a) = ${parentId} AND ID(b) = ${childId} MERGE (a)-[r:IS_FATHER]->(b) RETURN r`
+    `MATCH (a:Actor), (b:Actor) WHERE ID(a) = ${parentId} AND ID(b) = ${childId} MERGE (a)-[r:IS_FATHER {treeId: a.treeId}]->(b) RETURN r`
   );
   return res.send(wynik);
 });
