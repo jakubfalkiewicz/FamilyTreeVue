@@ -172,7 +172,7 @@
         />
       </template> -->
       <template
-        v-if="store.loggedUser._id == route.params.id"
+        v-if="store.loggedUser && store.loggedUser._id == route.params.id"
         #override-node="slotProps"
       >
         <v-shape
@@ -184,7 +184,12 @@
     <div v-for="node in canClone">
       <div>{{ node.firstName }} {{ node.lastName }} {{ node.birthDate }}</div>
     </div>
-    <button v-if="canClone.length > 0">Clone tree</button>
+    <button
+      v-if="canClone.length > 0 && route.params.id !== user._id"
+      @click="cloneTreeNodes"
+    >
+      Clone tree
+    </button>
   </div>
 </template>
 
@@ -208,7 +213,7 @@ const configs = vNG.defineConfigs({
     margin: 4,
     marker: {
       target: {
-        type: (edge) => (edge.type == "PARTNER" ? "none" : "arrow"),
+        type: (edge) => (edge.type = "arrow"),
         width: 4,
         height: 4,
       },
@@ -268,6 +273,8 @@ const edgeToAdd = ref({
 const selectedNodes = ref([]);
 const selectedEdges = ref([]);
 const canClone = ref([]);
+const sameNodes = ref([]);
+const generationDiff = ref(null);
 
 async function addRelationship() {
   console.log(edgeToAdd.value);
@@ -432,6 +439,8 @@ function customEventHandler(nodeId, event) {
   }
 }
 
+let edgesSet = [];
+
 function formGraph() {
   store.getTrees().then((data) => {
     store.setTrees(data);
@@ -449,7 +458,6 @@ function formGraph() {
       .filter((node) => node.treeId === route.params.id)
       .map((el) => el.id);
     treeEdges.value = data.edges
-      .filter((edge) => edge.type !== "PARTNER")
       .map((el) => ({
         ...el,
         source: findNode(el.from),
@@ -503,10 +511,11 @@ function formGraph() {
       };
     }
     setPosition();
-    const loggedUserTree = data.nodes.filter(
-      (el) => el.treeId == store.loggedUser._id
-    );
-    const sameNodes = treeNodes.value.reduce(
+    const loggedUserTree = store.loggedUser
+      ? data.nodes.filter((el) => el.treeId == store.loggedUser._id)
+      : [];
+    // console.log(loggedUserTree);
+    sameNodes.value = treeNodes.value.reduce(
       (prev, curr) => {
         let obj = loggedUserTree.find(
           (o) =>
@@ -517,49 +526,70 @@ function formGraph() {
         if (obj == undefined) {
           return { ...prev, filtered: [...prev.filtered, curr] };
         } else {
+          edgesSet.push({
+            oldNode: curr.id,
+            newNode: obj.id,
+          });
           return { ...prev, same: [...prev.same, curr] };
         }
       },
       { same: [], filtered: [] }
     );
-    if (route.params.id !== store.loggedUser._id) {
-      canClone.value = sameNodes.same;
-      const randSame = loggedUserTree.find(
-        (o) =>
-          o.firstName === sameNodes.same[0].firstName &&
-          o.lastName === sameNodes.same[0].lastName &&
-          o.birthDate === sameNodes.same[0].birthDate
-      );
-      const generationDiff = randSame.generation - sameNodes.same[0].generation;
-      const sameIds = sameNodes.same.map((el) => el.id);
-      const edgesToClone = treeEdges.value.filter(
-        (el) => !(sameIds.includes(el.from) && sameIds.includes(el.to))
-      );
-      console.log(edgesToClone);
-      async function cloneTreeNodes() {
-        await sameNodes.filtered.reduce(async (prev, curr) => {
-          const newNode = await axios
-            .post("http://localhost:5000/actors/", {
-              ...curr,
-              generation: parseInt(curr.generation) + parseInt(generationDiff),
-              treeId: store.loggedUser._id,
-            })
-            .then((res) => {
-              return res.data;
-            });
-          console.log({
-            oldNode: curr.id,
-            newNode: newNode.id,
-          });
-        }, []);
-        console.log("CLONED");
-      }
-      //COPY NEW IDS AND CREATE RELS BASED ON OLD ONES
-      cloneTreeNodes();
-      console.log(sameNodes.filtered);
-      console.log(sameNodes.same);
-    }
+    canClone.value = sameNodes.value.same;
+    const randSame = loggedUserTree.find(
+      (o) =>
+        o.firstName === sameNodes.value.same[0].firstName &&
+        o.lastName === sameNodes.value.same[0].lastName &&
+        o.birthDate === sameNodes.value.same[0].birthDate
+    );
+    generationDiff.value = randSame
+      ? randSame.generation - sameNodes.value.same[0].generation
+      : 0;
   });
+}
+
+async function cloneTreeNodes() {
+  const sameIds = sameNodes.value.same.map((el) => el.id);
+  const edgesToClone = treeEdges.value.filter(
+    (el) => !(sameIds.includes(el.from) && sameIds.includes(el.to))
+  );
+  await sameNodes.value.filtered.reduce(async (prev, curr) => {
+    const newNode = await axios
+      .post("http://localhost:5000/actors/", {
+        ...curr,
+        generation: parseInt(curr.generation) + parseInt(generationDiff.value),
+        treeId: store.loggedUser._id,
+      })
+      .then((res) => {
+        return res.data;
+      });
+    edgesSet.push({
+      oldNode: curr.id,
+      newNode: newNode.id,
+    });
+  }, []);
+
+  // console.log(edgesSet);
+  edgesToClone.reduce(async (prev, curr) => {
+    // console.log(curr);
+    const newEdge = await axios
+      .post(
+        curr.type === "IS_FATHER"
+          ? `http://localhost:5000/actors/addFather/${
+              edgesSet.find((n) => n.oldNode == curr.to).newNode
+            }`
+          : `http://localhost:5000/actors/addMother/${
+              edgesSet.find((n) => n.oldNode == curr.to).newNode
+            }`,
+        {
+          parentId: edgesSet.find((n) => n.oldNode == curr.from).newNode,
+        }
+      )
+      .then((res) => {
+        return res.data;
+      });
+  }, []);
+  alert("TREE CLONED");
 }
 
 onMounted(() => {

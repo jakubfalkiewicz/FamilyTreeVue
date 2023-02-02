@@ -24,11 +24,14 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-if="store.loggedUser">
-    Logged as:
-    <a :href="'/users/' + store.loggedUser._id">{{
-      store.loggedUser.username
-    }}</a>
+  <div v-if="store.loggedUser" class="logged-container">
+    <div>Logged as:</div>
+    <div
+      class="link"
+      @click="this.$router.push(`/users/${store.loggedUser._id}`)"
+    >
+      {{ store.loggedUser.username }}
+    </div>
   </div>
   <h1>Home</h1>
   <div class="users-list">
@@ -70,6 +73,17 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.logged-container {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+.link {
+  color: #646cff;
+}
+.link:hover {
+  cursor: pointer;
+}
 .searchbar {
   padding: 5px;
   font-size: 18px;
