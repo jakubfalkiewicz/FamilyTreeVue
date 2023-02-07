@@ -185,7 +185,11 @@
       <div>{{ node.firstName }} {{ node.lastName }} {{ node.birthDate }}</div>
     </div>
     <button
-      v-if="canClone.length > 0 && route.params.id !== user._id"
+      v-if="
+        store.loggedUser &&
+        canClone.length > 0 &&
+        route.params.id !== store.loggedUser._id
+      "
       @click="cloneTreeNodes"
     >
       Clone tree
@@ -309,13 +313,20 @@ function removePerson() {
     .delete(`http://localhost:5000/actors/${selectedNode.value.id}`)
     .then(() => formGraph());
 }
-
 function handleEdit() {
+  const list = store.usersList
+    .filter((e) => e._id !== user.value._id)
+    .find(
+      (o) => o.username === user.value.username || o.email === user.value.email
+    );
   if (edit.value == true) {
-    store.editUser(user.value).then((res) => {
-      if (res == true) {
-      }
-    });
+    !list &&
+      store.editUser(user.value).then((res) => {
+        if (res == true) {
+          edit.value = !edit.value;
+        }
+      });
+    list && alert("Username or email already taken");
   } else {
     edit.value = !edit.value;
   }
@@ -430,6 +441,7 @@ function customEventHandler(nodeId, event) {
     x: event.clientX,
     y: event.clientY,
   };
+  // console.log(eventInfo);
   if (event.type == "click") {
     heightDist.value = event.clientY;
     widthDist.value = event.clientX;
@@ -514,7 +526,6 @@ function formGraph() {
     const loggedUserTree = store.loggedUser
       ? data.nodes.filter((el) => el.treeId == store.loggedUser._id)
       : [];
-    // console.log(loggedUserTree);
     sameNodes.value = treeNodes.value.reduce(
       (prev, curr) => {
         let obj = loggedUserTree.find(
@@ -536,12 +547,14 @@ function formGraph() {
       { same: [], filtered: [] }
     );
     canClone.value = sameNodes.value.same;
-    const randSame = loggedUserTree.find(
-      (o) =>
-        o.firstName === sameNodes.value.same[0].firstName &&
-        o.lastName === sameNodes.value.same[0].lastName &&
-        o.birthDate === sameNodes.value.same[0].birthDate
-    );
+    const randSame =
+      sameNodes.value.same.length > 0 &&
+      loggedUserTree.find(
+        (o) =>
+          o.firstName === sameNodes.value.same[0].firstName &&
+          o.lastName === sameNodes.value.same[0].lastName &&
+          o.birthDate === sameNodes.value.same[0].birthDate
+      );
     generationDiff.value = randSame
       ? randSame.generation - sameNodes.value.same[0].generation
       : 0;
@@ -601,6 +614,8 @@ onMounted(() => {
 });
 
 watchEffect(() => {
+  console.log(store.loggedUser);
+
   if (user.value !== null) {
     canEdit.value =
       store.loggedUser !== null

@@ -1,10 +1,12 @@
 <script setup>
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watchEffect } from "vue";
 import { userStore } from "../store";
 
 const store = userStore();
 const peopleDB = ref(null);
 const search = ref("");
+
+console.log(store.loggedUser);
 
 onMounted(() => {
   store.getUsers().then((data) => {
@@ -20,6 +22,10 @@ onMounted(() => {
     }));
     store.setTrees(data);
   });
+});
+
+watchEffect(() => {
+  console.log(store.loggedUser);
 });
 </script>
 

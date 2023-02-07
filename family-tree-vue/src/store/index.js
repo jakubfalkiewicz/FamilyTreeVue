@@ -30,15 +30,15 @@ export const userStore = defineStore("main", {
     getUser(id) {
       return this.usersList.filter((user) => user._id === id)[0];
     },
-    isUnique(user) {
+    async isUnique(user) {
       const usernames = this.usersList.map((user) => user.username);
       const emails = this.usersList.map((user) => user.email);
       if (usernames.includes(user.username)) {
-        alert("This username is already taken!");
+        // alert("This username is already taken!");
         return false;
       }
       if (emails.includes(user.email)) {
-        alert("This email is already taken!");
+        // alert("This email is already taken!");
         return false;
       }
       return true;
@@ -46,8 +46,9 @@ export const userStore = defineStore("main", {
     async editUser(user) {
       if (this.isUnique(user)) {
         await axios.put(`${dbUrl}/users/${user._id}`, user).then((res) => {
-          console.log(res.data);
-          this.loggedUser = res.data.updatedUser;
+          console.log(user);
+          this.loggedUser = user;
+          // console.log(this.loggedUser);
         });
         return true;
       } else {
@@ -75,7 +76,7 @@ export const userStore = defineStore("main", {
               });
           });
         return response;
-      }
+      } else return false;
     },
     async loginUser(user) {
       const response = await axios
