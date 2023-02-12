@@ -19,9 +19,14 @@ const routes = [
     component: () => import("@/views/UserView.vue"),
   },
   {
-    path: "/tree",
-    name: "tree",
-    component: () => import("@/views/FamilyTree.vue"),
+    path: "/chat/public",
+    name: "chat",
+    component: () => import("@/views/ChatView.vue"),
+  },
+  {
+    path: "/chat/:id",
+    name: "usersChat",
+    component: () => import("@/views/PrivateChat.vue"),
   },
 ];
 

@@ -44,11 +44,11 @@ import { userStore } from "../store";
 
 const store = userStore();
 
-onMounted(() => {
-  store.getUsers().then((data) => {
-    store.setStore(data);
-  });
-});
+// onMounted(() => {
+//   store.getUsers().then((data) => {
+//     store.setStore(data);
+//   });
+// });
 export default {
   name: "RegisterView",
   components: {
