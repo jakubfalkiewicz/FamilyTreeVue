@@ -60,7 +60,7 @@ export default {
         });
     },
     async submit(call) {
-      const url = `http://localhost:5173/`;
+      const url = `http://127.0.0.1:5173/`;
       if (await this.validateForm()) {
         if (call.target.action == `${url}register`) {
           store.registerUser(this.values).then((res) => {
@@ -70,7 +70,6 @@ export default {
           });
         }
         if (call.target.action == `${url}login`) {
-          console.log("loggin");
           store.loginUser(this.values).then((res) => {
             res == "Success"
               ? this.$router.push("../")

@@ -177,13 +177,7 @@
           v-bind="slotProps"
         />
       </template> -->
-      <template
-        v-if="
-          store.loggedUsers.some((e) => e._id === loggedUser._id) &&
-          loggedUser._id == route.params.id
-        "
-        #override-node="slotProps"
-      >
+      <template #override-node="slotProps">
         <v-shape
           v-bind="slotProps"
           @click="customEventHandler(slotProps.nodeId, $event)"
@@ -288,10 +282,7 @@ const selectedEdges = ref([]);
 const canClone = ref([]);
 const sameNodes = ref([]);
 const generationDiff = ref(null);
-const chatData = ref(null);
 const loggedUser = ref(null);
-
-function sendMessage() {}
 
 async function addRelationship() {
   console.log(edgeToAdd.value);
@@ -476,12 +467,14 @@ function formGraph() {
         name: `${el.firstName} \n${el.lastName}`,
         color: el.gender === "male" ? "lightskyblue" : "hotpink",
       }));
+    // console.log(treeNodes.value);
     const findNode = (id) => {
       return treeNodes.value.map((el) => el.id).indexOf(id);
     };
     const nodes = data.nodes
       .filter((node) => node.treeId === route.params.id)
       .map((el) => el.id);
+    // console.log(nodes);
     treeEdges.value = data.edges
       .map((el) => ({
         ...el,
@@ -490,15 +483,7 @@ function formGraph() {
         label: el.type.substring(3),
       }))
       .filter((node) => nodes.includes(node.from) || nodes.includes(node.to));
-
-    const hasParent = (node) => {
-      const dane = data.edges.filter(
-        (edge) =>
-          node.id == edge.to &&
-          (edge.type == "IS_FATHER" || edge.type == "IS_MOTHER")
-      );
-      return dane.length > 0 ? dane[0].from : false;
-    };
+    // console.log(treeEdges.value);
     function lastOfGen(list, gen) {
       const result = list
         .filter((el) => el.gen == gen)
@@ -507,27 +492,15 @@ function formGraph() {
     }
     function setPosition() {
       let positions = treeNodes.value.reduce((prev, curr, index) => {
-        if (hasParent(curr)) {
-          return [
-            ...prev,
-            {
-              id: curr.id,
-              gen: curr.generation,
-              x: lastOfGen(prev, curr.generation),
-              y: curr.generation * -150,
-            },
-          ];
-        } else {
-          return [
-            ...prev,
-            {
-              id: curr.id,
-              gen: curr.generation,
-              x: lastOfGen(prev, curr.generation),
-              y: curr.generation * -150,
-            },
-          ];
-        }
+        return [
+          ...prev,
+          {
+            id: curr.id,
+            gen: curr.generation,
+            x: lastOfGen(prev, curr.generation),
+            y: curr.generation * -150,
+          },
+        ];
       }, []);
       layout.value = {
         nodes: {
@@ -537,9 +510,9 @@ function formGraph() {
     }
     setPosition();
     const loggedUserTree = store.loggedUsers.some(
-      (e) => e._id === loggedUser._id
+      (e) => e._id === loggedUser.value._id
     )
-      ? data.nodes.filter((el) => el.treeId == loggedUser._id)
+      ? data.nodes.filter((el) => el.treeId == loggedUser.value._id)
       : [];
     sameNodes.value = treeNodes.value.reduce(
       (prev, curr) => {
@@ -562,6 +535,7 @@ function formGraph() {
       { same: [], filtered: [] }
     );
     canClone.value = sameNodes.value.same;
+    console.log(sameNodes.value);
     const randSame =
       sameNodes.value.same.length > 0 &&
       loggedUserTree.find(
@@ -586,7 +560,7 @@ async function cloneTreeNodes() {
       .post("http://localhost:5000/actors/", {
         ...curr,
         generation: parseInt(curr.generation) + parseInt(generationDiff.value),
-        treeId: loggedUser._id,
+        treeId: loggedUser.value._id,
       })
       .then((res) => {
         return res.data;
@@ -598,7 +572,9 @@ async function cloneTreeNodes() {
   }, []);
 
   console.log(edgesSet);
+  console.log(edgesToClone.value);
   edgesToClone.reduce(async (prev, curr) => {
+    console.log(curr);
     await axios
       .post(
         curr.type === "IS_FATHER"
@@ -622,26 +598,17 @@ async function cloneTreeNodes() {
 
 onMounted(async () => {
   loggedUser.value = !sessionStorage.loggedUser
-    ? {}
+    ? null
     : JSON.parse(sessionStorage.loggedUser);
+  if (loggedUser.value === null) {
+    console.log("REDIRECTING");
+    window.location.href = "/login";
+  }
   await store.getUsers().then((data) => {
     store.setStore(data);
     user.value = data.filter((user) => user._id === route.params.id)[0];
   });
   formGraph();
-
-  // const rooms = await store.getRooms();
-
-  // const room = rooms.find(
-  //   (room) =>
-  //     room.name.includes(user.value._id) &&
-  //     room.name.includes(loggedUser.value._id)
-  // );
-  // !room && store.createRoom(`${user.value._id}-${loggedUser.value._id}`);
-  // if (room) {
-  //   chatData.value = room.messages;
-  // }
-  // console.log(room);
 });
 
 watchEffect(() => {

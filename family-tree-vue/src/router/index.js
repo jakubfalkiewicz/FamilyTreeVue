@@ -16,6 +16,11 @@ const routes = [
   {
     path: "/users/:id",
     name: "users",
+    component: () => import("@/components/FamilyTreeTable.vue"),
+  },
+  {
+    path: "/user/:id",
+    name: "user",
     component: () => import("@/views/UserView.vue"),
   },
   {

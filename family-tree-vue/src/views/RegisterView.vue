@@ -111,6 +111,10 @@
       </span>
     </p>
     <input type="submit" value="Submit" />
+    <div>
+      Already have an account?
+      <div class="link" @click="this.$router.push(`/login`)">Login</div>
+    </div>
   </VueYupValidation>
 </template>
 <script>
@@ -180,6 +184,13 @@ export default {
 };
 </script>
 <style lang="scss">
+.link {
+  text-decoration: underline;
+  color: #646cff;
+}
+.link:hover {
+  cursor: pointer;
+}
 .header {
   display: flex;
   justify-content: space-between;

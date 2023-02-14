@@ -22,15 +22,24 @@ onMounted(async () => {
     store.setStore(data);
   });
   store.getTrees().then((data) => {
-    peopleDB.value = data.nodes.map((node) => ({
-      name: `${node.firstName} ${node.lastName}`,
-      birth: node.birthDate,
-      treeId: node.treeId,
-      gender: node.gender,
-    }));
+    peopleDB.value = data.nodes
+      .map((node) => ({
+        name: `${node.firstName} ${node.lastName}`,
+        birth: node.birthDate,
+        treeId: node.treeId,
+        gender: node.gender,
+      }))
+      .filter((el) => el.treeId !== loggedUser.value._id);
     store.setTrees(data);
   });
-  loggedUser.value = JSON.parse(sessionStorage.getItem("loggedUser"));
+  // loggedUser.value = JSON.parse(sessionStorage.getItem("loggedUser"));
+  loggedUser.value = !sessionStorage.loggedUser
+    ? null
+    : JSON.parse(sessionStorage.loggedUser);
+  if (loggedUser.value === null) {
+    console.log("REDIRECTING");
+    window.location.href = "/login";
+  }
   if (loggedUser.value) {
     setTimeout(() => {
       loggedUser.value.socketId = socket.id;
@@ -59,7 +68,7 @@ onMounted(async () => {
   <nav>
     <div v-if="loggedUser && loggedUser._id">
       <router-link class="link" to="/">Home</router-link> |
-      <router-link class="link" to="/chat">Chat</router-link> |
+      <router-link class="link" to="/chat/public">Chat</router-link> |
       <button
         class="nav-logout"
         v-if="store.loggedUsers.some((e) => e._id === loggedUser._id)"

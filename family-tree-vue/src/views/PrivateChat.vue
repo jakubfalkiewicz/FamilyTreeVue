@@ -39,6 +39,7 @@ const room = ref(null);
 privateSocket.on("private message", ({ content, from }) => {
   console.log("Got private message");
   console.log(from);
+  console.log(store.loggedUsers);
   const senderSocket = store.loggedUsers.find((e) => e._id === from);
   console.log(senderSocket);
   if (senderSocket._id === route.params.id) {
@@ -50,6 +51,7 @@ privateSocket.on("private message", ({ content, from }) => {
 });
 
 function sendMessage() {
+  console.log(store.loggedUsers);
   const socketReceiver = store.loggedUsers.find(
     (e) => e._id === route.params.id
   );
@@ -73,6 +75,10 @@ onMounted(async () => {
     ? {}
     : JSON.parse(sessionStorage.loggedUser);
 
+  if (loggedUser.value === null) {
+    console.log("REDIRECTING");
+    window.location.href = "/login";
+  }
   const rooms = await store.getRooms();
   room.value = rooms.find(
     (room) =>
@@ -80,6 +86,8 @@ onMounted(async () => {
       room.name.includes(loggedUser.value._id)
   );
   console.log(room.value);
+  console.log(route.params.id);
+  console.log(loggedUser.value._id);
   !room.value && store.createRoom(`${route.params.id}-${loggedUser.value._id}`);
   if (room.value) {
     console.log(room.value.messages);
