@@ -22,15 +22,16 @@ onMounted(async () => {
     store.setStore(data);
   });
   store.getTrees().then((data) => {
-    peopleDB.value = data.nodes
-      .map((node) => ({
-        name: `${node.firstName} ${node.lastName}`,
-        birth: node.birthDate,
-        treeId: node.treeId,
-        gender: node.gender,
-      }))
-      .filter((el) => el.treeId !== loggedUser.value._id);
+    peopleDB.value = data.nodes.map((node) => ({
+      name: `${node.firstName} ${node.lastName}`,
+      birth: node.birthDate,
+      treeId: node.treeId,
+      gender: node.gender,
+      id: node.id,
+    }));
+    // .filter((el) => el.treeId !== loggedUser.value._id);
     store.setTrees(data);
+    console.log(peopleDB.value);
   });
   // loggedUser.value = JSON.parse(sessionStorage.getItem("loggedUser"));
   loggedUser.value = !sessionStorage.loggedUser
@@ -130,7 +131,10 @@ onMounted(async () => {
         return p.name.toLowerCase().includes(search.toLowerCase());
       })"
       class="user"
-      @click="this.$router.push(`/users/${person.treeId}`)"
+      @click="
+        store.setFocus(person.id);
+        this.$router.push(`/users/${person.treeId}`);
+      "
       :style="{
         border: 2 + 'px',
         borderStyle: 'solid',

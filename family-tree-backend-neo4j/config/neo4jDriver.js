@@ -2,9 +2,10 @@ const neo4j = require("neo4j-driver");
 require("dotenv").config();
 
 const dbConnData = {
-  uri: process.env.NEO4J_URI || "bolt://localhost:7687",
+  // "bolt://localhost:11003/neo4j"
+  uri: process.env.NEO4J_URI || "neo4j://localhost:7687",
   user: process.env.NEO4J_USER || "neo4j",
-  password: process.env.NEO4J_PASSWORD || "test",
+  password: process.env.NEO4J_PASSWORD || "s3cr3t",
 };
 
 const driver = neo4j.driver(

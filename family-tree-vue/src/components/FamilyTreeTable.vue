@@ -1,68 +1,166 @@
 <template>
+  <SelectPerson
+    :users="usersList"
+    :selectPersonView="selectPersonView"
+    :nodeToAdd="nodeToAdd"
+    @selectPersonView="selectPersonView = !selectPersonView"
+    @updateTable="updateTable"
+  />
+  <AddPerson
+    :addPersonView="addPersonView"
+    :nodeToAdd="nodeToAdd"
+    @addPersonView="addPersonView = !addPersonView"
+    @addPerson="addPerson"
+    @selectPersonView="
+      selectPersonView = !selectPersonView;
+      addPersonView = !addPersonView;
+      nodeToAdd = {};
+    "
+  />
+  <PeopleList
+    v-if="parentsList"
+    :users="parentsList"
+    @peopleListView="peopleListView = !peopleListView"
+    @updateTable="updateTable"
+    @setDefault="setDefault"
+    :peopleListView="peopleListView"
+    :nodeToAdd="nodeToAdd"
+    :select-ancestor="false"
+  />
+  <div>
+    <h2 :style="{ margin: 5 + 'px' }">
+      {{ focusedPerson.firstName }} {{ focusedPerson.lastName }}
+    </h2>
+    <div>{{ focusedPerson.birthDate }}</div>
+  </div>
   <div class="table-container">
     <div class="table-column">
       <div class="table-row-1">
         <div v-if="store.hasFather(focusedPerson.id)">
-          <div>
-            {{ store.hasFather(focusedPerson.id).firstName }}
-            {{ store.hasFather(focusedPerson.id).lastName }}
+          <TableRow :user="store.hasFather(focusedPerson.id)" />
+          <div class="parent-buttons" v-if="isOwner">
+            <button
+              @click="
+                nodeToAdd.type = 'addFather';
+                nodeToAdd.gender = 'male';
+                addPersonView = !addPersonView;
+                setList();
+              "
+            >
+              ADD
+            </button>
+            <button
+              v-if="store.hasAnyFather(focusedPerson.id).length > 1"
+              @click="getParents('fathers')"
+            >
+              CHANGE DEFAULT
+            </button>
+            <button
+              @click="
+                detach(store.hasFather(focusedPerson.id).id, focusedPerson.id)
+              "
+            >
+              DETACH
+            </button>
           </div>
-          {{ store.hasFather(focusedPerson.id).birthDate }}
+        </div>
+        <div v-else-if="store.hasAnyFather(focusedPerson.id).length > 0">
+          <button @click="getParents2(store.hasAnyFather(focusedPerson.id))">
+            SET DEFAULT
+          </button>
+        </div>
+        <div v-else>
+          <div
+            v-if="isOwner"
+            class="add-ancestor"
+            @click="
+              nodeToAdd.type = 'addFather';
+              nodeToAdd.gender = 'male';
+              addPersonView = !addPersonView;
+              setList();
+            "
+          >
+            +
+          </div>
         </div>
       </div>
       <div class="table-row-1">
         <div v-if="store.hasMother(focusedPerson.id)">
-          <div>
-            {{ store.hasMother(focusedPerson.id).firstName }}
-            {{ store.hasMother(focusedPerson.id).lastName }}
+          <TableRow :user="store.hasMother(focusedPerson.id)" />
+          <div class="parent-buttons" v-if="isOwner">
+            <button
+              @click="
+                nodeToAdd.type = 'addMother';
+                nodeToAdd.gender = 'female';
+                addPersonView = !addPersonView;
+                setList();
+              "
+            >
+              ADD
+            </button>
+            <button
+              v-if="store.hasAnyMother(focusedPerson.id).length > 1"
+              @click="getParents('mothers')"
+            >
+              CHANGE DEFAULT
+            </button>
+            <button
+              @click="
+                detach(store.hasMother(focusedPerson.id).id, focusedPerson.id)
+              "
+            >
+              DETACH
+            </button>
           </div>
-          {{ store.hasMother(focusedPerson.id).birthDate }}
+        </div>
+        <div v-else-if="store.hasAnyMother(focusedPerson.id).length > 0">
+          <button @click="getParents2(store.hasAnyMother(focusedPerson.id))">
+            SET DEFAULT
+          </button>
+        </div>
+        <div v-else>
+          <div
+            v-if="isOwner"
+            class="add-ancestor"
+            @click="
+              nodeToAdd.type = 'addMother';
+              nodeToAdd.gender = 'female';
+              addPersonView = !addPersonView;
+              setList();
+            "
+          >
+            +
+          </div>
         </div>
       </div>
     </div>
     <div class="table-column">
       <div class="table-row-2">
         <div v-if="store.hasFather(store.hasFather(focusedPerson.id)?.id)">
-          <div>
-            {{
-              store.hasFather(store.hasFather(focusedPerson.id).id).firstName
-            }}
-            {{ store.hasFather(store.hasFather(focusedPerson.id).id).lastName }}
-          </div>
-          {{ store.hasFather(store.hasFather(focusedPerson.id).id).birthDate }}
+          <TableRow
+            :user="store.hasFather(store.hasFather(focusedPerson.id)?.id)"
+          />
         </div>
       </div>
       <div class="table-row-2">
         <div v-if="store.hasMother(store.hasFather(focusedPerson.id)?.id)">
-          <div>
-            {{
-              store.hasMother(store.hasFather(focusedPerson.id).id).firstName
-            }}
-            {{ store.hasMother(store.hasFather(focusedPerson.id).id).lastName }}
-          </div>
-          {{ store.hasMother(store.hasFather(focusedPerson.id).id).birthDate }}
+          <TableRow
+            :user="store.hasMother(store.hasFather(focusedPerson.id)?.id)"
+          />
         </div>
       </div>
       <div class="table-row-2">
         <div v-if="store.hasFather(store.hasMother(focusedPerson.id)?.id)">
-          <div>
-            {{
-              store.hasFather(store.hasMother(focusedPerson.id).id).firstName
-            }}
-            {{ store.hasFather(store.hasMother(focusedPerson.id).id).lastName }}
-          </div>
-          {{ store.hasFather(store.hasMother(focusedPerson.id).id).birthDate }}
+          <TableRow
+            :user="store.hasFather(store.hasMother(focusedPerson.id)?.id)"
+          />
         </div>
       </div>
       <div class="table-row-2">
         <div v-if="store.hasMother(store.hasMother(focusedPerson.id)?.id)">
-          <div>
-            {{
-              store.hasMother(store.hasMother(focusedPerson.id).id).firstName
-            }}
-            {{ store.hasMother(store.hasMother(focusedPerson.id).id).lastName }}
-          </div>
-          {{ store.hasMother(store.hasMother(focusedPerson.id).id).birthDate }}
+          <TableRow
+            :user="store.hasMother(store.hasMother(focusedPerson.id)?.id)"
+          />
         </div>
       </div>
     </div>
@@ -75,23 +173,13 @@
             )
           "
         >
-          <div>
-            {{
+          <TableRow
+            :user="
               store.hasFather(
-                store.hasFather(store.hasFather(focusedPerson.id).id).id
-              ).firstName
-            }}
-            {{
-              store.hasFather(
-                store.hasFather(store.hasFather(focusedPerson.id).id).id
-              ).lastName
-            }}
-          </div>
-          {{
-            store.hasFather(
-              store.hasFather(store.hasFather(focusedPerson.id).id).id
-            ).birthDate
-          }}
+                store.hasFather(store.hasFather(focusedPerson.id)?.id)?.id
+              )
+            "
+          />
         </div>
       </div>
       <div class="table-row-3">
@@ -102,23 +190,13 @@
             )
           "
         >
-          <div>
-            {{
+          <TableRow
+            :user="
               store.hasMother(
-                store.hasFather(store.hasFather(focusedPerson.id).id).id
-              ).firstName
-            }}
-            {{
-              store.hasMother(
-                store.hasFather(store.hasFather(focusedPerson.id).id).id
-              ).lastName
-            }}
-          </div>
-          {{
-            store.hasMother(
-              store.hasFather(store.hasFather(focusedPerson.id).id).id
-            ).birthDate
-          }}
+                store.hasFather(store.hasFather(focusedPerson.id)?.id)?.id
+              )
+            "
+          />
         </div>
       </div>
       <div class="table-row-3">
@@ -129,23 +207,13 @@
             )
           "
         >
-          <div>
-            {{
+          <TableRow
+            :user="
               store.hasFather(
-                store.hasMother(store.hasFather(focusedPerson.id).id).id
-              ).firstName
-            }}
-            {{
-              store.hasFather(
-                store.hasMother(store.hasFather(focusedPerson.id).id).id
-              ).lastName
-            }}
-          </div>
-          {{
-            store.hasFather(
-              store.hasMother(store.hasFather(focusedPerson.id).id).id
-            ).birthDate
-          }}
+                store.hasMother(store.hasFather(focusedPerson.id)?.id)?.id
+              )
+            "
+          />
         </div>
       </div>
       <div class="table-row-3">
@@ -156,23 +224,13 @@
             )
           "
         >
-          <div>
-            {{
+          <TableRow
+            :user="
               store.hasMother(
-                store.hasMother(store.hasFather(focusedPerson.id).id).id
-              ).firstName
-            }}
-            {{
-              store.hasMother(
-                store.hasMother(store.hasFather(focusedPerson.id).id).id
-              ).lastName
-            }}
-          </div>
-          {{
-            store.hasMother(
-              store.hasMother(store.hasFather(focusedPerson.id).id).id
-            ).birthDate
-          }}
+                store.hasMother(store.hasFather(focusedPerson.id)?.id)?.id
+              )
+            "
+          />
         </div>
       </div>
       <div class="table-row-3">
@@ -183,23 +241,13 @@
             )
           "
         >
-          <div>
-            {{
+          <TableRow
+            :user="
               store.hasFather(
-                store.hasFather(store.hasMother(focusedPerson.id).id).id
-              ).firstName
-            }}
-            {{
-              store.hasFather(
-                store.hasFather(store.hasMother(focusedPerson.id).id).id
-              ).lastName
-            }}
-          </div>
-          {{
-            store.hasFather(
-              store.hasFather(store.hasMother(focusedPerson.id).id).id
-            ).birthDate
-          }}
+                store.hasFather(store.hasMother(focusedPerson.id)?.id)?.id
+              )
+            "
+          />
         </div>
       </div>
       <div class="table-row-3">
@@ -210,23 +258,13 @@
             )
           "
         >
-          <div>
-            {{
+          <TableRow
+            :user="
               store.hasMother(
-                store.hasFather(store.hasMother(focusedPerson.id).id).id
-              ).firstName
-            }}
-            {{
-              store.hasMother(
-                store.hasFather(store.hasMother(focusedPerson.id).id).id
-              ).lastName
-            }}
-          </div>
-          {{
-            store.hasMother(
-              store.hasFather(store.hasMother(focusedPerson.id).id).id
-            ).birthDate
-          }}
+                store.hasFather(store.hasMother(focusedPerson.id)?.id)?.id
+              )
+            "
+          />
         </div>
       </div>
       <div class="table-row-3">
@@ -237,23 +275,13 @@
             )
           "
         >
-          <div>
-            {{
+          <TableRow
+            :user="
               store.hasFather(
-                store.hasMother(store.hasMother(focusedPerson.id).id).id
-              ).firstName
-            }}
-            {{
-              store.hasFather(
-                store.hasMother(store.hasMother(focusedPerson.id).id).id
-              ).lastName
-            }}
-          </div>
-          {{
-            store.hasFather(
-              store.hasMother(store.hasMother(focusedPerson.id).id).id
-            ).birthDate
-          }}
+                store.hasMother(store.hasMother(focusedPerson.id)?.id)?.id
+              )
+            "
+          />
         </div>
       </div>
       <div class="table-row-3">
@@ -264,37 +292,40 @@
             )
           "
         >
-          <div>
-            {{
+          <TableRow
+            :user="
               store.hasMother(
-                store.hasMother(store.hasMother(focusedPerson.id).id).id
-              ).firstName
-            }}
-            {{
-              store.hasMother(
-                store.hasMother(store.hasMother(focusedPerson.id).id).id
-              ).lastName
-            }}
-          </div>
-          {{
-            store.hasMother(
-              store.hasMother(store.hasMother(focusedPerson.id).id).id
-            ).birthDate
-          }}
+                store.hasMother(store.hasMother(focusedPerson.id)?.id)?.id
+              )
+            "
+          />
         </div>
       </div>
     </div>
   </div>
   <div class="kids-search-siblings">
     <div class="kids-container">
-      <h2>Children</h2>
+      <div>
+        <h2>Children</h2>
+        <button
+          v-if="isOwner"
+          @click="
+            nodeToAdd = {};
+            addPersonView = !addPersonView;
+            setList();
+          "
+        >
+          +
+        </button>
+      </div>
+
       <div
         v-if="store.getKids(focusedPerson.id)"
         v-for="kid in store.getKids(focusedPerson.id)"
       >
         <div>{{ kid.firstName }} {{ kid.lastName }}</div>
         <div>{{ kid.birthDate }}</div>
-        <button @click="setFocus(kid.id)">Focus</button>
+        <button @click="setFocus(kid.id)">FOCUS</button>
       </div>
     </div>
     <div>
@@ -310,8 +341,13 @@
       </div>
       <div class="tree-person-list">
         <div
-          v-if="treeUsersList?.nodes !== null"
-          v-for="person in treeUsersList?.nodes
+          v-if="
+            store.treesList?.nodes.filter(
+              (e) => e.treeID === route.params.id
+            ) !== null
+          "
+          v-for="person in store.treesList?.nodes
+            .filter((e) => e.treeId === route.params.id)
             .filter((n) => n.id !== focusedPerson.id)
             .filter((p) =>
               `${p.firstName.toLowerCase()}${p.lastName.toLowerCase()}`.includes(
@@ -326,28 +362,15 @@
             borderColor: person.gender == 'male' ? 'lightskyblue' : 'hotpink',
           }"
         >
-          <div
-            :style="{
-              display: 'flex',
-              gap: 5 + 'px',
-              justifyContent: 'center',
-            }"
-          >
-            <div :style="{ fontSize: 18 + 'px' }">{{ person.firstName }}</div>
-            <div :style="{ fontSize: 18 + 'px' }">{{ person.lastName }}</div>
-            <button @click="setFocus(person.id)">Focus</button>
+          <div class="user-row">
+            <div>{{ person.firstName }} {{ person.lastName }}</div>
+            <div>{{ person.birthDate }}</div>
           </div>
-          <div>{{ person.birthDate }}</div>
+          <div class="user-row">
+            <button @click="setFocus(person.id)">FOCUS</button>
+            <button v-if="isOwner" @click="delNode(person.id)">DELETE</button>
+          </div>
         </div>
-      </div>
-    </div>
-    <div class="kids-container">
-      <h2>Siblings</h2>
-      <div
-        v-if="store.getKids(focusedPerson.id)"
-        v-for="kid in store.getKids(focusedPerson.id)"
-      >
-        {{ kid.firstName }} {{ kid.lastName }}
       </div>
     </div>
   </div>
@@ -358,6 +381,11 @@ import { useRoute } from "vue-router";
 import { ref, watchEffect, onMounted, watch } from "vue";
 import { userStore } from "../store";
 import { storeToRefs } from "pinia";
+import axios from "axios";
+import TableRow from "./TableRow.vue";
+import PeopleList from "./PeopleList.vue";
+import AddPerson from "./AddPerson.vue";
+import SelectPerson from "./SelectPerson.vue";
 
 const route = useRoute();
 const store = userStore();
@@ -365,29 +393,192 @@ const store = userStore();
 // const focusedPerson = ref(null);
 const treeUsersList = ref(null);
 const search = ref("");
+const addPersonView = ref(false);
+const peopleListView = ref(false);
+const selectPersonView = ref(false);
+const nodeToAdd = ref({
+  type: null,
+  firstName: null,
+  lastName: null,
+  gender: null,
+  birthDate: null,
+});
+const parentsList = ref(null);
+const usersList = ref(null);
+const isOwner = ref(
+  JSON.parse(sessionStorage.getItem("loggedUser"))._id === route.params.id
+);
+console.log(JSON.parse(sessionStorage.getItem("loggedUser"))._id);
+console.log(isOwner.value);
+
+function detach(parent, child) {
+  store.delRel(parent, child);
+}
+
+function delNode(nodeId) {
+  store.delNode(nodeId);
+}
+
+async function setList() {
+  usersList.value = await axios
+    .post(
+      `http://localhost:5000/actors/potentialAncestors/${store.focusedPerson.id}`,
+      { gender: nodeToAdd.value.gender }
+    )
+    .then((res) =>
+      res.data
+        .filter(
+          (e) =>
+            !store.treesList.edges.find(
+              (el) =>
+                (el.from === e.id && el.to === store.focusedPerson.id) ||
+                (el.to === e.id && el.from === store.focusedPerson.id)
+            )
+        )
+        .filter((node) => node.treeId === route.params.id)
+    );
+  console.log(usersList.value);
+}
+
+function getParents2(parents) {
+  parentsList.value = parents;
+  peopleListView.value = !peopleListView.value;
+}
+
+async function getParents(type) {
+  const response = await axios.get(
+    `http://localhost:5000/actors/${type}/${focusedPerson.value.id}`
+  );
+  parentsList.value = response.data;
+  peopleListView.value = !peopleListView.value;
+}
+
+async function addPerson() {
+  if (
+    nodeToAdd.value.firstName &&
+    nodeToAdd.value.lastName &&
+    nodeToAdd.value.gender &&
+    nodeToAdd.value.birthDate
+  ) {
+    nodeToAdd.value.type
+      ? await axios
+          .post(`http://localhost:5000/actors/`, {
+            ...nodeToAdd.value,
+            // generation: parseInt(focusedPerson.value.generation) + 1,
+            treeId: route.params.id,
+          })
+          .then(async (res) => {
+            console.log(res.data);
+            await axios.post(
+              `http://localhost:5000/actors/${nodeToAdd.value.type}/${focusedPerson.value.id}`,
+              { parentId: res.data.id }
+            );
+          })
+      : await axios
+          .post(`http://localhost:5000/actors/`, {
+            ...nodeToAdd.value,
+            // generation: parseInt(focusedPerson.value.generation) - 1,
+            treeId: route.params.id,
+          })
+          .then(async (res) => {
+            console.log(res.data);
+            await axios.post(
+              `http://localhost:5000/actors/${
+                focusedPerson.value.gender === "male"
+                  ? "addFather"
+                  : "addMother"
+              }/${res.data.id}`,
+              { parentId: focusedPerson.value.id }
+            );
+          });
+    store.getTrees().then((data) => {
+      store.setTrees(data);
+      treeUsersList.value = {
+        nodes: data.nodes.filter((node) => node.treeId === route.params.id),
+        edges: data.edges.filter((edge) => edge.treeId === route.params.id),
+      };
+    });
+    addPersonView.value = false;
+    nodeToAdd.value = {};
+  } else {
+    console.log(nodeToAdd.value);
+    alert("Missing fields");
+  }
+}
 
 const { focusedPerson } = storeToRefs(store);
 
 function setFocus(personId) {
+  console.log(personId);
   store.setFocus(personId);
   focusedPerson.value = store.focusedPerson;
   console.log(focusedPerson.value);
 }
 
-onMounted(async () => {
-  watch(focusedPerson, () =>
-    console.log("CHANGED FOCUS: ", store.hasFather(focusedPerson.value.id))
+async function setDefault(id) {
+  await axios.put(
+    `http://localhost:5000/actors/setDefault/${store.focusedPerson.id}`,
+    { id: id }
   );
+  updateTable();
+  peopleListView.value = !peopleListView.value;
+}
+
+async function updateTable() {
   await store.getTrees().then((data) => {
+    store.treesList = {
+      nodes: data.nodes.filter((node) => node.treeId === route.params.id),
+      edges: data.edges.filter((edge) => edge.treeId === route.params.id),
+    };
     treeUsersList.value = {
       nodes: data.nodes.filter((node) => node.treeId === route.params.id),
       edges: data.edges.filter((edge) => edge.treeId === route.params.id),
     };
   });
+  console.log("table updated");
+}
+
+onMounted(async () => {
+  console.log("TABLE MOUNTED");
+  watch(focusedPerson, () =>
+    console.log("CHANGED FOCUS: ", focusedPerson.value)
+  );
+  watch(treeUsersList, () =>
+    console.log("CHANGED TREELIST: ", treeUsersList.value)
+  );
+  watch(selectPersonView, () =>
+    console.log("CHANGED selectPersonView: ", selectPersonView.value)
+  );
+  watch(addPersonView, () =>
+    console.log("CHANGED addPersonView: ", addPersonView.value)
+  );
+  watch(nodeToAdd, () => console.log("CHANGED nodeToadd: ", nodeToAdd.value));
+  updateTable();
 });
 </script>
 
 <style lang="scss" scoped>
+.user-row {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  > div {
+    font-size: 18px;
+  }
+}
+.parent-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 5px;
+}
+.add-ancestor {
+  font-size: 35px;
+}
+.add-ancestor:hover {
+  cursor: pointer;
+}
 .kids-search-siblings {
   display: flex;
   flex-direction: row;
@@ -400,6 +591,9 @@ onMounted(async () => {
   gap: 5px;
 }
 .user {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
   height: auto;
   width: 200px;
   padding: 5px;
@@ -448,6 +642,9 @@ onMounted(async () => {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+button {
+  font-size: 15px;
 }
 </style>
 

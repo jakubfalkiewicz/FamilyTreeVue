@@ -21,19 +21,39 @@ export const userStore = defineStore("main", {
     hasFather(id) {
       const rels =
         this.treesList.edges.find(
-          (edge) => edge.to === id && edge.type === "IS_FATHER"
+          (edge) =>
+            edge.to === id && edge.type === "IS_FATHER" && edge.default === true
         ) || null;
       return rels
         ? this.treesList.nodes.find((user) => user.id === rels.from)
         : null;
     },
+    hasAnyFather(id) {
+      const rels =
+        this.treesList.edges
+          .filter((edge) => edge.to === id && edge.type === "IS_FATHER")
+          .map((e) => e.from) || null;
+      return rels
+        ? this.treesList.nodes.filter((user) => rels.includes(user.id))
+        : null;
+    },
     hasMother(id) {
       const rels =
         this.treesList.edges.find(
-          (edge) => edge.to === id && edge.type === "IS_MOTHER"
+          (edge) =>
+            edge.to === id && edge.type === "IS_MOTHER" && edge.default === true
         ) || null;
       return rels
         ? this.treesList.nodes.find((user) => user.id === rels.from)
+        : null;
+    },
+    hasAnyMother(id) {
+      const rels =
+        this.treesList.edges
+          .filter((edge) => edge.to === id && edge.type === "IS_MOTHER")
+          .map((e) => e.from) || null;
+      return rels
+        ? this.treesList.nodes.filter((user) => rels.includes(user.id))
         : null;
     },
     getKids(id) {
@@ -43,6 +63,10 @@ export const userStore = defineStore("main", {
       return rels
         ? this.treesList.nodes.filter((e) => rels.includes(e.id))
         : [];
+    },
+    async delNode(id) {
+      await axios.delete(`http://localhost:5000/actors/${id}`);
+      this.refreshTrees();
     },
     userRefresh(user) {
       this.usersList = this.usersList.filter((e) => e._id !== user._id);
@@ -71,6 +95,17 @@ export const userStore = defineStore("main", {
     },
     setTrees(store) {
       this.treesList = store;
+    },
+    async refreshTrees() {
+      await this.getTrees().then((store) => {
+        this.treesList = store;
+      });
+    },
+    async delRel(parentId, childId) {
+      await axios.delete("http://localhost:5000/actors/delRel", {
+        data: { parentId: parentId, childId: childId },
+      });
+      this.refreshTrees();
     },
     getUser(id) {
       return this.usersList.filter((user) => user._id === id)[0];
