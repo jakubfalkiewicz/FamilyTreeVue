@@ -22,14 +22,15 @@ onMounted(async () => {
     store.setStore(data);
   });
   store.getTrees().then((data) => {
-    peopleDB.value = data.nodes.map((node) => ({
-      name: `${node.firstName} ${node.lastName}`,
-      birth: node.birthDate,
-      treeId: node.treeId,
-      gender: node.gender,
-      id: node.id,
-    }));
-    // .filter((el) => el.treeId !== loggedUser.value._id);
+    peopleDB.value = data.nodes
+      .map((node) => ({
+        name: `${node.firstName} ${node.lastName}`,
+        birth: node.birthDate,
+        treeId: node.treeId,
+        gender: node.gender,
+        id: node.id,
+      }))
+      .filter((el) => el.treeId !== loggedUser.value._id);
     store.setTrees(data);
     console.log(peopleDB.value);
   });

@@ -1,4 +1,11 @@
 <template>
+  <CloneTree
+    v-if="cloneTreeView"
+    :users="cloneList"
+    @cloneTreeView="cloneTreeView = !cloneTreeView"
+    @cloneTree="cloneTree"
+  >
+  </CloneTree>
   <SelectPerson
     :users="usersList"
     :selectPersonView="selectPersonView"
@@ -32,6 +39,9 @@
       {{ focusedPerson.firstName }} {{ focusedPerson.lastName }}
     </h2>
     <div>{{ focusedPerson.birthDate }}</div>
+    <button v-if="!isOwner" @click="cloneTreeView = !cloneTreeView">
+      CLONE TREE
+    </button>
   </div>
   <div class="table-container">
     <div class="table-column">
@@ -386,16 +396,16 @@ import TableRow from "./TableRow.vue";
 import PeopleList from "./PeopleList.vue";
 import AddPerson from "./AddPerson.vue";
 import SelectPerson from "./SelectPerson.vue";
+import CloneTree from "./CloneTree.vue";
 
 const route = useRoute();
 const store = userStore();
 
-// const focusedPerson = ref(null);
-const treeUsersList = ref(null);
 const search = ref("");
 const addPersonView = ref(false);
 const peopleListView = ref(false);
 const selectPersonView = ref(false);
+const cloneTreeView = ref(false);
 const nodeToAdd = ref({
   type: null,
   firstName: null,
@@ -405,11 +415,9 @@ const nodeToAdd = ref({
 });
 const parentsList = ref(null);
 const usersList = ref(null);
-const isOwner = ref(
-  JSON.parse(sessionStorage.getItem("loggedUser"))._id === route.params.id
-);
-console.log(JSON.parse(sessionStorage.getItem("loggedUser"))._id);
-console.log(isOwner.value);
+const loggedUser = JSON.parse(sessionStorage.getItem("loggedUser"));
+const isOwner = ref(loggedUser._id === route.params.id);
+const cloneList = ref(null);
 
 function detach(parent, child) {
   store.delRel(parent, child);
@@ -419,6 +427,9 @@ function delNode(nodeId) {
   store.delNode(nodeId);
 }
 
+function cloneTree(from, to) {
+  store.cloneTree(from, to);
+}
 async function setList() {
   usersList.value = await axios
     .post(
@@ -493,10 +504,6 @@ async function addPerson() {
           });
     store.getTrees().then((data) => {
       store.setTrees(data);
-      treeUsersList.value = {
-        nodes: data.nodes.filter((node) => node.treeId === route.params.id),
-        edges: data.edges.filter((edge) => edge.treeId === route.params.id),
-      };
     });
     addPersonView.value = false;
     nodeToAdd.value = {};
@@ -526,25 +533,30 @@ async function setDefault(id) {
 
 async function updateTable() {
   await store.getTrees().then((data) => {
+    console.log(data);
     store.treesList = {
       nodes: data.nodes.filter((node) => node.treeId === route.params.id),
       edges: data.edges.filter((edge) => edge.treeId === route.params.id),
     };
-    treeUsersList.value = {
-      nodes: data.nodes.filter((node) => node.treeId === route.params.id),
-      edges: data.edges.filter((edge) => edge.treeId === route.params.id),
-    };
   });
+  console.log(store.treesList);
   console.log("table updated");
 }
 
 onMounted(async () => {
+  cloneList.value = await store
+    .getTrees()
+    .then((res) =>
+      res.nodes.filter(
+        (node) =>
+          node.treeId === loggedUser._id &&
+          node.gender === store.focusedPerson.gender
+      )
+    );
+
   console.log("TABLE MOUNTED");
   watch(focusedPerson, () =>
     console.log("CHANGED FOCUS: ", focusedPerson.value)
-  );
-  watch(treeUsersList, () =>
-    console.log("CHANGED TREELIST: ", treeUsersList.value)
   );
   watch(selectPersonView, () =>
     console.log("CHANGED selectPersonView: ", selectPersonView.value)
@@ -595,7 +607,8 @@ onMounted(async () => {
   flex-direction: column;
   gap: 5px;
   height: auto;
-  width: 200px;
+  width: auto;
+  min-width: 300px;
   padding: 5px;
   border-radius: 15px;
 }

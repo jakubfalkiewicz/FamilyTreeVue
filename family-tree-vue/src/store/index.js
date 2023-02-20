@@ -107,6 +107,12 @@ export const userStore = defineStore("main", {
       });
       this.refreshTrees();
     },
+    async cloneTree(from, to) {
+      await axios.post(`http://localhost:5000/actors/cloneSubgraph/${to}`, {
+        id: from,
+      });
+      this.refreshTrees();
+    },
     getUser(id) {
       return this.usersList.filter((user) => user._id === id)[0];
     },

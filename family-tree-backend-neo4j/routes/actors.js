@@ -67,27 +67,6 @@ router.post("/", async (req, res) => {
           id: response.records[0]._fields[0].low,
         });
       });
-    //   onNext: (record) => {
-    //     console.log("onNext:");
-    //     console.log(JSON.parse(record.get("ID(a)")));
-    //     let id = JSON.parse(record.get("ID(a)"));
-    //   },
-    //   onCompleted: (data) => {
-    //     console.log(id);
-    //     session.close();
-    //     return res.send({
-    //       firstName: firstName,
-    //       lastName: lastName,
-    //       birthDate: birthDate,
-    //       generation: generation,
-    //       gender: gender,
-    //       treeId: treeId,
-    //     });
-    //   },
-    //   onError: (error) => {
-    //     console.log(error);
-    //   },
-    // });
   } else {
     return res.send(
       `Empty fields: ${!firstName ? "firstName" : ""}${
@@ -271,17 +250,29 @@ router.post("/cloneSubgraph/:id", async (req, res) => {
   const session = driver.session();
   const toId = req.params.id;
   const fromId = req.body.id;
+  const treeId = req.body.treeId;
   const subgraph = await session.run(`
     MATCH (p1:Actor) WHERE id(p1)=${fromId}
           MATCH (p2:Actor) WHERE id(p2)=${toId}
           MATCH path = (p1)-[:IS_FATHER|IS_MOTHER*]-()
           WITH p1,p2, collect(path) as paths
           CALL apoc.refactor.cloneSubgraphFromPaths(paths, {
-              standinNodes:[[p1, p2]]
+              standinNodes:[[p1, p2]],
+              skipProperties: ['treeId']
           })
           YIELD input, output, error
           RETURN input, output, error
   `);
+  const fixRelsId = await session.run(
+    `MATCH ()-[r:IS_FATHER|IS_MOTHER]->()
+           WHERE r.treeId IS NULL
+           SET r.treeId = '${treeId}'`
+  );
+  const fixNodesId = await session.run(
+    `MATCH (p:Actor)
+          WHERE p.treeId IS NULL
+          SET p.treeId='${treeId}'`
+  );
 });
 
 router.post("/addPartner/:id", async (req, res) => {
