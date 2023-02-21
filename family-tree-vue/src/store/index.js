@@ -77,7 +77,7 @@ export const userStore = defineStore("main", {
     },
     getUsername(id) {
       return this.usersList.filter((e) => e._id === id || e._id === id._id)[0]
-        .username;
+        ?.username;
     },
     async getUsers() {
       return fetch("http://localhost:4000/api/users/").then((response) =>

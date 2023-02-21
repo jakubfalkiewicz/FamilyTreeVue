@@ -21,21 +21,31 @@
       >
         SET DEFAULT
       </button>
-      <button v-if="!selectAncestor" class="yellow-button">DETACH</button>
-      <button v-if="!selectAncestor" class="red-button">DELETE</button>
+      <button
+        v-if="!selectAncestor"
+        class="yellow-button"
+        @click="
+          $emit('detach', user.id, store.focusedPerson.id);
+          $emit('peopleListView');
+        "
+      >
+        DETACH
+      </button>
       <button v-if="selectAncestor" class="green-button">SELECT</button>
     </div>
   </div>
 </template>
 
 <script setup>
+import { userStore } from "../store";
+const store = userStore();
 defineProps({
   users: Array,
   peopleListView: Boolean,
   nodeToAdd: Object,
   selectAncestor: Boolean,
 });
-const emits = defineEmits(["setDefault", "peopleListView"]);
+const emits = defineEmits(["setDefault", "peopleListView", "detach"]);
 </script>
 
 <style lang="scss" scoped>

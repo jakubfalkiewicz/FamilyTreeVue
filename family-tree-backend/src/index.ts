@@ -1,15 +1,44 @@
+import express, { Application } from "express"
+import path from "path"
+import cors from "cors"
+import mongoose, {ConnectOptions} from "mongoose"
+import initializePassport from "./config/passportConfig"
+import passport from "passport"
+import cookieParser from "cookie-parser"
+import credentials from "./middleware/credentials"
+import session from "express-session"
+import https from "https"
+import fs from "fs"
 require("dotenv").config();
-const express = require("express");
-const path = require("path");
-const app = express();
-const cors = require("cors");
-app.use(cors());
-app.options("*", cors()); // include before other routes
-// const session = require("express-session");
-// const User = require("./models/User");
-// const axios = require("axios");
-// const Room = require("./models/Room");
-const mongoose = require("mongoose");
+
+// app.use(cors());
+// app.options("*", cors());
+const app: Application = express();
+
+app.use(cookieParser());
+app.use(credentials);
+app.use(
+  cors({
+    origin: ["https://127.0.0.1:5173", "https://127.0.0.1:5173/"],
+    credentials: true,
+  })
+);
+app.use(express.json());
+
+initializePassport(passport);
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "secret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      sameSite: "none",
+      secure: true,
+    },
+  })
+);
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.set("views", "./views");
 
@@ -18,7 +47,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use(function (req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*"); // update to match the domain you will make the request from
+  res.header("Access-Control-Allow-Origin", "*");
   res.header(
     "Access-Control-Allow-Headers",
     "Origin, X-Requested-With, Content-Type, Accept"
@@ -34,8 +63,6 @@ const dbConnData = {
 
 const db_url = `mongodb://${dbConnData.host}:${dbConnData.port}/${dbConnData.database}`;
 
-// Dodajemy usługi REST, które należy zdefiniować w pliku „users.js”
-// znajdującym się w podkatalogu „routes”
 const users = require("./routes/users");
 const roomsAPI = require("./routes/rooms");
 
@@ -51,7 +78,7 @@ mongoose
   .connect(db_url, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-  })
+  } as ConnectOptions)
   .then((response) => {
     console.log(
       `Connected to MongoDB. Database name: "${response.connections[0].name}"`
@@ -62,8 +89,16 @@ mongoose
 const apiPort = process.env.PORT || 4000;
 const apiHost = process.env.API_HOST || "localhost";
 
-const server = app.listen(apiPort, () => {
-  console.log(`API server available from: http://${apiHost}:${apiPort}`);
+const server = https.createServer(
+  {
+    key: fs.readFileSync(path.join(__dirname, "../cert/key.pem")),
+    cert: fs.readFileSync(path.join(__dirname, "../cert/cert.pem")),
+  },
+  app
+);
+
+server.listen(apiPort, () => {
+  console.log(`API server available from: https://${apiHost}:${apiPort}`);
 });
 
 // const io = require("socket.io")(server);

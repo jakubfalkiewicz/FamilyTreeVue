@@ -1,10 +1,11 @@
 const express = require("express");
 const router = express.Router();
+const checkAuthenticated = require("../middleware/checkAuthenticated");
 
 const Room = require("../models/Room");
 
 // Pobranie danych wszystkich pokoi
-router.get("/", async (req, res) => {
+router.get("/", checkAuthenticated, async (req, res) => {
   const rooms = await Room.find({});
   return res.send(rooms);
 });

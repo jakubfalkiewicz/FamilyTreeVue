@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, watchEffect } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { userStore } from "../store";
 import { RouterLink } from "vue-router";
 import socket from "../socket";
@@ -14,6 +14,7 @@ const dropdown = ref(false);
 function logout() {
   store.logoutUser(loggedUser.value);
   loggedUser.value = null;
+  window.location.href = "/login";
 }
 
 onMounted(async () => {
@@ -49,20 +50,6 @@ onMounted(async () => {
       store.userRefresh(loggedUser.value);
     }, 200);
   }
-  // const usersChats = await store.getRooms();
-  // console.log(usersChats);
-  // // const people = store.usersList.filter((us) =>
-  // //   store.chatRooms
-  // //     .filter((e) => e.name.includes(loggedUser.value._id))
-  // //     .map((el) =>
-  // //       el.joinedUsers.filter((user) => user !== loggedUser.value._id)
-  // //     )[0]
-  // //     .includes(us._id)
-  // // );
-  // const people = store.usersList.reduce((prev,curr) => {
-
-  // },[])
-  // console.log(people);
 });
 </script>
 
@@ -87,7 +74,13 @@ onMounted(async () => {
   </nav>
   <div v-if="loggedUser" class="logged-container">
     <div>Logged as:</div>
-    <div class="link" @click="this.$router.push(`/users/${loggedUser._id}`)">
+    <div
+      class="link"
+      @click="
+        store.focusedPerson = null;
+        this.$router.push(`/users/${loggedUser._id}`);
+      "
+    >
       {{ loggedUser.username }}
     </div>
   </div>

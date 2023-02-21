@@ -1,12 +1,18 @@
 <template>
   <div class="chat-container">
+    <div>
+      <router-link class="link" to="/">Home</router-link>
+    </div>
     <h2>Main chat</h2>
     <div class="messages-container">
       <ul class="messages" v-for="message in chatData.messages">
         <li>
           <div
             class="link"
-            @click="this.$router.push(`/users/${message.author}`)"
+            @click="
+              store.focusedPerson = null;
+              this.$router.push(`/users/${message.author}`);
+            "
           >
             {{ store.getUsername(message.author) + ":" }}
           </div>

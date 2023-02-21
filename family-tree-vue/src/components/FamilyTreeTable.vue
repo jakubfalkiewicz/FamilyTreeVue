@@ -30,11 +30,19 @@
     @peopleListView="peopleListView = !peopleListView"
     @updateTable="updateTable"
     @setDefault="setDefault"
+    @detach="detach"
     :peopleListView="peopleListView"
     :nodeToAdd="nodeToAdd"
     :select-ancestor="false"
   />
-  <div>
+  <div
+    class="link"
+    v-if="route.params.id !== loggedUser._id"
+    @click="this.$router.push(`/chat/${route.params.id}`)"
+  >
+    Private Chat
+  </div>
+  <div v-if="focusedPerson">
     <h2 :style="{ margin: 5 + 'px' }">
       {{ focusedPerson.firstName }} {{ focusedPerson.lastName }}
     </h2>
@@ -43,7 +51,7 @@
       CLONE TREE
     </button>
   </div>
-  <div class="table-container">
+  <div class="table-container" v-if="focusedPerson">
     <div class="table-column">
       <div class="table-row-1">
         <div v-if="store.hasFather(focusedPerson.id)">
@@ -314,7 +322,7 @@
     </div>
   </div>
   <div class="kids-search-siblings">
-    <div class="kids-container">
+    <div class="kids-container" v-if="focusedPerson">
       <div>
         <h2>Children</h2>
         <button
@@ -358,7 +366,7 @@
           "
           v-for="person in store.treesList?.nodes
             .filter((e) => e.treeId === route.params.id)
-            .filter((n) => n.id !== focusedPerson.id)
+            .filter((n) => n.id !== focusedPerson?.id)
             .filter((p) =>
               `${p.firstName.toLowerCase()}${p.lastName.toLowerCase()}`.includes(
                 search.toLowerCase()
@@ -436,8 +444,8 @@ async function setList() {
       `http://localhost:5000/actors/potentialAncestors/${store.focusedPerson.id}`,
       { gender: nodeToAdd.value.gender }
     )
-    .then((res) =>
-      res.data
+    .then((res) => {
+      return res.data
         .filter(
           (e) =>
             !store.treesList.edges.find(
@@ -446,9 +454,8 @@ async function setList() {
                 (el.to === e.id && el.from === store.focusedPerson.id)
             )
         )
-        .filter((node) => node.treeId === route.params.id)
-    );
-  console.log(usersList.value);
+        .filter((node) => node.treeId === route.params.id);
+    });
 }
 
 function getParents2(parents) {
@@ -539,8 +546,6 @@ async function updateTable() {
       edges: data.edges.filter((edge) => edge.treeId === route.params.id),
     };
   });
-  console.log(store.treesList);
-  console.log("table updated");
 }
 
 onMounted(async () => {
@@ -550,26 +555,22 @@ onMounted(async () => {
       res.nodes.filter(
         (node) =>
           node.treeId === loggedUser._id &&
-          node.gender === store.focusedPerson.gender
+          node.gender === store.focusedPerson?.gender
       )
     );
 
   console.log("TABLE MOUNTED");
-  watch(focusedPerson, () =>
-    console.log("CHANGED FOCUS: ", focusedPerson.value)
-  );
-  watch(selectPersonView, () =>
-    console.log("CHANGED selectPersonView: ", selectPersonView.value)
-  );
-  watch(addPersonView, () =>
-    console.log("CHANGED addPersonView: ", addPersonView.value)
-  );
-  watch(nodeToAdd, () => console.log("CHANGED nodeToadd: ", nodeToAdd.value));
   updateTable();
 });
 </script>
 
 <style lang="scss" scoped>
+.link {
+  color: #646cff;
+}
+.link:hover {
+  cursor: pointer;
+}
 .user-row {
   display: flex;
   justify-content: center;

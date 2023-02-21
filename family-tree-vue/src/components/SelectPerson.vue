@@ -13,7 +13,7 @@
       <button
         class="green-button"
         v-if="
-          parseInt(user.generation) > parseInt(store.focusedPerson.generation)
+          new Date(user.birthDate) < new Date(store.focusedPerson.birthDate)
         "
         @click="
           addParent(user.id, user.gender);
