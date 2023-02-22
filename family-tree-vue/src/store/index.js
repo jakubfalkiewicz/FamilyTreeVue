@@ -2,8 +2,13 @@ import { defineStore } from "pinia";
 import axios from "axios";
 import socket from "../socket";
 
-const dbUrl = `http://localhost:4000/api`;
 const treeUrl = `http://localhost:5000`;
+
+const axiosSetup = axios.create({
+  baseURL: "https://localhost:4000/",
+  headers: { "Content-Type": "application/json" },
+  withCredentials: true,
+});
 
 export const userStore = defineStore("main", {
   state: () => ({
@@ -80,9 +85,9 @@ export const userStore = defineStore("main", {
         ?.username;
     },
     async getUsers() {
-      return fetch("http://localhost:4000/api/users/").then((response) =>
-        response.json()
-      );
+      return axiosSetup.get("/api/users/").then((response) => {
+        return response.data.users;
+      });
     },
     setStore(store) {
       this.usersList = store;
@@ -117,15 +122,16 @@ export const userStore = defineStore("main", {
       return this.usersList.filter((user) => user._id === id)[0];
     },
     async getRooms() {
-      this.chatRooms = await fetch("http://localhost:4000/api/rooms/").then(
-        (response) => response.json()
-      );
+      this.chatRooms = await axiosSetup.get("/api/rooms/").then((response) => {
+        console.log(response.data);
+        return response.data;
+      });
       return this.chatRooms;
     },
     async createRoom(name) {
       const users = name.split("-");
-      return await axios
-        .post(`http://localhost:4000/api/rooms/`, {
+      return await axiosSetup
+        .post(`/api/rooms/`, {
           name: name,
           joinedUsers: users,
           messages: [],
@@ -135,12 +141,12 @@ export const userStore = defineStore("main", {
         });
     },
     async sendMessage(author, message, roomId) {
-      const room = await axios
-        .get(`http://localhost:4000/api/rooms/${roomId}`)
+      const room = await axiosSetup
+        .get(`/api/rooms/${roomId}`)
         .then((res) => res.data[0]);
       // console.log(room);
       room.messages.push({ author: author, message: message });
-      await axios.put(`http://localhost:4000/api/rooms/${roomId}`, {
+      await axiosSetup.put(`/api/rooms/${roomId}`, {
         ...room,
         messages: room.messages,
       });
@@ -160,7 +166,7 @@ export const userStore = defineStore("main", {
     },
     async editUser(user) {
       if (this.isUnique(user)) {
-        await axios.put(`${dbUrl}/users/${user._id}`, user).then((res) => {
+        await axiosSetup.put(`/api/users/${user._id}`, user).then((res) => {
           // console.log(user);
           sessionStorage.setItem(
             "loggedUser",
@@ -175,8 +181,8 @@ export const userStore = defineStore("main", {
     },
     async registerUser(user) {
       if (this.isUnique(user)) {
-        const response = await axios
-          .post(`${dbUrl}/users/register`, user)
+        const response = await axiosSetup
+          .post(`/api/users/register`, user)
           .then(async (res) => {
             sessionStorage.setItem(
               "loggedUser",
@@ -201,10 +207,10 @@ export const userStore = defineStore("main", {
       } else return false;
     },
     async loginUser(user) {
-      // console.log(user);
-      const response = await axios
-        .post(`${dbUrl}/users/login`, user)
+      const response = await axiosSetup
+        .post(`/api/users/login`, user)
         .then((res) => {
+          console.log(res.data);
           sessionStorage.setItem(
             "loggedUser",
             JSON.stringify({ ...res.data, socketId: socket.id })
@@ -224,10 +230,10 @@ export const userStore = defineStore("main", {
       return response;
     },
     logoutUser(user) {
-      // console.log(user);
-      this.loggedUsers = this.loggedUsers.filter((e) => e._id !== user._id);
-      // console.log(this.loggedUsers);
-      sessionStorage.removeItem("loggedUser");
+      axiosSetup.post(`/api/users/logout`, user).then((res) => {
+        this.loggedUsers = this.loggedUsers.filter((e) => e._id !== user._id);
+        sessionStorage.removeItem("loggedUser");
+      });
     },
   },
 });

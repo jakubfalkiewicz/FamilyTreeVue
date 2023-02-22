@@ -4,23 +4,23 @@ require("dotenv").config();
 
 const loginController = {
   handleLogin: (req: Request, res: Response, next: NextFunction) =>
-    passport.authenticate("local", (_err, user: any) => {
+    passport.authenticate("local", (_err: any, user: any) => {
       if (!user) {
         return res.status(400).send({ message: "Invalid credentials" });
       }
       req.logIn(
         user,
-        {
-          maxAge: 1000 * 60 * 60 * 24 * 7,
-          httpOnly: true,
-        },
+        // {
+        //   maxAge: 36000,
+        //   httpOnly: true,
+        // },
         (err) => {
           if (err) {
             return res.status(401).json({ message: "Problem with logging in" });
           }
           return res
             .status(200)
-            .json({ username: user.username, email: user.email });
+            .json({ username: user.username, email: user.email, _id: user._id });
         }
       );
     })(req, res, next),

@@ -9,26 +9,26 @@ import credentials from "./middleware/credentials"
 import session from "express-session"
 import https from "https"
 import fs from "fs"
+import users from "./routes/users"
+import rooms from "./routes/rooms"
+import corsOptions from './config/corsOptions'
 require("dotenv").config();
 
-// app.use(cors());
-// app.options("*", cors());
-const app: Application = express();
 
+const app: Application = express();
+// app.use(cors());
+// app.options("*", cors({credentials: true}));
 app.use(cookieParser());
 app.use(credentials);
 app.use(
-  cors({
-    origin: ["https://127.0.0.1:5173", "https://127.0.0.1:5173/"],
-    credentials: true,
-  })
+  cors(corsOptions)
 );
 app.use(express.json());
 
 initializePassport(passport);
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "secret",
+    secret: process.env.SESSION_SECRET || 'secret',
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -46,14 +46,14 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-app.use(function (req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept"
-  );
-  next();
-});
+// app.use(function (req, res, next) {
+//   res.header("Access-Control-Allow-Origin", "*");
+//   res.header(
+//     "Access-Control-Allow-Headers",
+//     "Origin, X-Requested-With, Content-Type, Accept"
+//   );
+//   next();
+// });
 
 const dbConnData = {
   host: process.env.MONGO_HOST || "127.0.0.1",
@@ -63,8 +63,7 @@ const dbConnData = {
 
 const db_url = `mongodb://${dbConnData.host}:${dbConnData.port}/${dbConnData.database}`;
 
-const users = require("./routes/users");
-const roomsAPI = require("./routes/rooms");
+
 
 app.use((req, res, next) => {
   res.locals.currentUser = req.user;
@@ -72,7 +71,7 @@ app.use((req, res, next) => {
 });
 
 app.use("/api/users", users);
-app.use("/api/rooms", roomsAPI);
+app.use("/api/rooms", rooms);
 
 mongoose
   .connect(db_url, {

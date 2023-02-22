@@ -1,10 +1,16 @@
-const checkAuthenticated = (req, res, next) => {
+import { Request, Response, NextFunction } from "express";
+
+const checkAuthenticated = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   if (req.isAuthenticated()) {
-    console.log("User authenticated");
     return next();
   } else {
     res.status(401).json({ error: "Not authenticated" });
   }
 };
 
-module.exports = checkAuthenticated;
+export default checkAuthenticated;
+// module.exports = checkAuthenticated;

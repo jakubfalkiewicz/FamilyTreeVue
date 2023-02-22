@@ -15,7 +15,7 @@ import { userStore } from "./store";
 const store = userStore();
 const route = useRoute();
 onMounted(() => {
-  store.getRooms();
+  // store.getRooms();
   console.log("APP MOUNTED");
 });
 </script>
